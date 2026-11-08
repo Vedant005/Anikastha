@@ -1,6 +1,7 @@
 import logging
+from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
-from typing import AsyncGenerator, Dict
+
 from fastapi import FastAPI, status
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
@@ -67,7 +68,7 @@ app.add_middleware(
 
 
 @app.get("/healthz", tags=["Health"], status_code=status.HTTP_200_OK)
-async def health_check() -> Dict[str, str]:
+async def health_check() -> dict[str, str]:
     """System health check probe."""
     db_status = "healthy"
     try:
@@ -82,7 +83,7 @@ async def health_check() -> Dict[str, str]:
         "environment": settings.ENVIRONMENT,
     }
 
+
 app.include_router(webhooks_router, prefix="/api/v1")
 app.include_router(reviews_router, prefix="/api/v1")
 app.include_router(repositories_router, prefix="/api/v1")
-
