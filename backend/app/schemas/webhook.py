@@ -1,11 +1,10 @@
-from typing import Any, Dict, Optional
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 
 class GitHubUser(BaseModel):
     login: str
-    id: Optional[int] = None
-    avatar_url: Optional[str] = None
+    id: int | None = None
+    avatar_url: str | None = None
 
 
 class GitHubBranchRef(BaseModel):
@@ -19,7 +18,7 @@ class GitHubPullRequestData(BaseModel):
     user: GitHubUser
     head: GitHubBranchRef
     base: GitHubBranchRef
-    diff_url: Optional[str] = None
+    diff_url: str | None = None
     state: str = "open"
 
 
@@ -36,9 +35,8 @@ class GitHubInstallationData(BaseModel):
 
 class GitHubWebhookPayload(BaseModel):
     action: str
-    number: Optional[int] = None
-    pull_request: Optional[GitHubPullRequestData] = None
+    number: int | None = None
+    pull_request: GitHubPullRequestData | None = None
     repository: GitHubRepositoryData
-    installation: Optional[GitHubInstallationData] = None
-    sender: Optional[GitHubUser] = None
-
+    installation: GitHubInstallationData | None = None
+    sender: GitHubUser | None = None

@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from typing import Optional
+
 from pydantic import BaseModel, ConfigDict
 
 from app.schemas.policy import PolicyRead
@@ -23,5 +23,4 @@ class RepositoryRead(RepositoryBase):
     id: uuid.UUID
     created_at: datetime
     updated_at: datetime
-    policy: Optional[PolicyRead] = None
-
+    policy: PolicyRead | None = None

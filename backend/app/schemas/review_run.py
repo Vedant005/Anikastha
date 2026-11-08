@@ -1,6 +1,7 @@
 import uuid
 from datetime import datetime
-from typing import List, Literal, Optional
+from typing import Literal
+
 from pydantic import BaseModel, ConfigDict
 
 from app.schemas.finding import FindingRead
@@ -12,17 +13,17 @@ class ReviewRunBase(BaseModel):
     title: str = ""
     pr_author: str = ""
     status: Literal["PENDING", "PROCESSING", "COMPLETED", "FAILED"] = "PENDING"
-    verdict: Optional[Literal["APPROVE", "COMMENT", "REQUEST_CHANGES"]] = None
+    verdict: Literal["APPROVE", "COMMENT", "REQUEST_CHANGES"] | None = None
     total_findings: int = 0
     critical_count: int = 0
     high_count: int = 0
     medium_count: int = 0
     low_count: int = 0
-    summary_markdown: Optional[str] = None
-    error_message: Optional[str] = None
-    execution_time_ms: Optional[int] = None
-    started_at: Optional[datetime] = None
-    completed_at: Optional[datetime] = None
+    summary_markdown: str | None = None
+    error_message: str | None = None
+    execution_time_ms: int | None = None
+    started_at: datetime | None = None
+    completed_at: datetime | None = None
 
 
 class ReviewRunCreate(ReviewRunBase):
@@ -35,5 +36,4 @@ class ReviewRunRead(ReviewRunBase):
     id: uuid.UUID
     repository_id: uuid.UUID
     created_at: datetime
-    findings: List[FindingRead] = []
-
+    findings: list[FindingRead] = []

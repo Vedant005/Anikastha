@@ -1,6 +1,7 @@
 import uuid
 from datetime import datetime
-from typing import Literal, Optional
+from typing import Literal
+
 from pydantic import BaseModel, ConfigDict
 
 
@@ -10,16 +11,16 @@ class FindingBase(BaseModel):
     title: str
     description: str
     file_path: str
-    line_start: Optional[int] = None
-    line_end: Optional[int] = None
-    code_snippet: Optional[str] = None
-    suggestion_markdown: Optional[str] = None
-    cve_id: Optional[str] = None
-    package_name: Optional[str] = None
-    current_version: Optional[str] = None
-    fixed_version: Optional[str] = None
+    line_start: int | None = None
+    line_end: int | None = None
+    code_snippet: str | None = None
+    suggestion_markdown: str | None = None
+    cve_id: str | None = None
+    package_name: str | None = None
+    current_version: str | None = None
+    fixed_version: str | None = None
     is_verified: bool = False
-    verification_reason: Optional[str] = None
+    verification_reason: str | None = None
     published_inline: bool = False
 
 
@@ -33,4 +34,3 @@ class FindingRead(FindingBase):
     id: uuid.UUID
     review_run_id: uuid.UUID
     created_at: datetime
-
