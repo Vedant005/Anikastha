@@ -1,13 +1,14 @@
 import uuid
 from datetime import datetime
-from typing import List, Literal, Optional
+from typing import Literal
+
 from pydantic import BaseModel, ConfigDict, Field
 
 
 class PolicyBase(BaseModel):
     fail_on_severity: Literal["CRITICAL", "HIGH", "MEDIUM", "LOW"] = "HIGH"
     block_prohibited_licenses: bool = True
-    prohibited_licenses: List[str] = Field(
+    prohibited_licenses: list[str] = Field(
         default_factory=lambda: ["GPL-3.0", "AGPL-3.0", "SSPL-1.0"]
     )
     auto_request_changes: bool = True
@@ -18,10 +19,10 @@ class PolicyCreate(PolicyBase):
 
 
 class PolicyUpdate(BaseModel):
-    fail_on_severity: Optional[Literal["CRITICAL", "HIGH", "MEDIUM", "LOW"]] = None
-    block_prohibited_licenses: Optional[bool] = None
-    prohibited_licenses: Optional[List[str]] = None
-    auto_request_changes: Optional[bool] = None
+    fail_on_severity: Literal["CRITICAL", "HIGH", "MEDIUM", "LOW"] | None = None
+    block_prohibited_licenses: bool | None = None
+    prohibited_licenses: list[str] | None = None
+    auto_request_changes: bool | None = None
 
 
 class PolicyRead(PolicyBase):
@@ -30,4 +31,3 @@ class PolicyRead(PolicyBase):
     id: uuid.UUID
     repository_id: uuid.UUID
     updated_at: datetime
-
