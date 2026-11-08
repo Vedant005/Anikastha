@@ -27,11 +27,12 @@ async def dep_specialist_node(state: ReviewState) -> dict[str, Any]:
     dependencies = state.get("dependencies", [])
     manifest_files = list({d.get("manifest_file") for d in dependencies if d.get("manifest_file")})
 
-    llm = LLMFactory.get_chat_model()
     try:
+        llm = LLMFactory.get_chat_model()
         structured_llm = llm.with_structured_output(DependencySecurityReport)
     except Exception as exc:
-        logger.warning("Structured output not supported directly: %s. Using standard LLM.", exc)
+        logger.warning("Could not initialize structured LLM for dep specialist: %s", exc)
+        llm = None
         structured_llm = None
 
     user_prompt = format_dep_specialist_prompt(
