@@ -33,11 +33,18 @@ class Settings(BaseSettings):
     GITHUB_WEBHOOK_SECRET: str = ""
 
     # LLM Settings
-    LLM_PROVIDER: Literal["gemini", "openai", "anthropic"] = "gemini"
+    LLM_PROVIDER: Literal[
+        "gemini", "openai", "anthropic", "groq", "openrouter", "huggingface", "custom"
+    ] = "gemini"
     LLM_MODEL: str = "gemini-2.5-flash"
+    LLM_BASE_URL: str = ""
+    LLM_TEMPERATURE: float = 0.1
     GEMINI_API_KEY: str = ""
     OPENAI_API_KEY: str = ""
     ANTHROPIC_API_KEY: str = ""
+    GROQ_API_KEY: str = ""
+    OPENROUTER_API_KEY: str = ""
+    HUGGINGFACE_API_KEY: str = ""
 
     # Security & Policy Defaults
     DEFAULT_FAIL_ON_SEVERITY: Literal["CRITICAL", "HIGH", "MEDIUM", "LOW"] = "HIGH"
