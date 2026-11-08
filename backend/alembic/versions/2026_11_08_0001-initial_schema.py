@@ -1,20 +1,22 @@
 """Initial database schema for repositories, policies, review_runs, findings
 
 Revision ID: 0001_initial_schema
-Revises: 
+Revises:
 Create Date: 2026-11-08 10:00:00.000000
 
 """
-from typing import Sequence, Union
 
-from alembic import op
+from collections.abc import Sequence
+
 import sqlalchemy as sa
 from sqlalchemy.dialects import postgresql
 
+from alembic import op
+
 revision: str = "0001_initial_schema"
-down_revision: Union[str, None] = None
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = None
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
@@ -29,15 +31,25 @@ def upgrade() -> None:
         sa.Column("created_at", sa.DateTime(timezone=True), nullable=False),
         sa.Column("updated_at", sa.DateTime(timezone=True), nullable=False),
     )
-    op.create_index("ix_repositories_github_repo_id", "repositories", ["github_repo_id"], unique=True)
+    op.create_index(
+        "ix_repositories_github_repo_id", "repositories", ["github_repo_id"], unique=True
+    )
     op.create_index("ix_repositories_full_name", "repositories", ["full_name"], unique=False)
-    op.create_index("ix_repositories_installation_id", "repositories", ["installation_id"], unique=False)
+    op.create_index(
+        "ix_repositories_installation_id", "repositories", ["installation_id"], unique=False
+    )
 
     # 2. Policies table
     op.create_table(
         "policies",
         sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True),
-        sa.Column("repository_id", postgresql.UUID(as_uuid=True), sa.ForeignKey("repositories.id", ondelete="CASCADE"), nullable=False, unique=True),
+        sa.Column(
+            "repository_id",
+            postgresql.UUID(as_uuid=True),
+            sa.ForeignKey("repositories.id", ondelete="CASCADE"),
+            nullable=False,
+            unique=True,
+        ),
         sa.Column("fail_on_severity", sa.String(length=20), nullable=False, server_default="HIGH"),
         sa.Column("block_prohibited_licenses", sa.Boolean(), nullable=False, server_default="true"),
         sa.Column("prohibited_licenses", sa.JSON(), nullable=False),
@@ -49,7 +61,12 @@ def upgrade() -> None:
     op.create_table(
         "review_runs",
         sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True),
-        sa.Column("repository_id", postgresql.UUID(as_uuid=True), sa.ForeignKey("repositories.id", ondelete="CASCADE"), nullable=False),
+        sa.Column(
+            "repository_id",
+            postgresql.UUID(as_uuid=True),
+            sa.ForeignKey("repositories.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
         sa.Column("pull_number", sa.Integer(), nullable=False),
         sa.Column("commit_sha", sa.String(length=40), nullable=False),
         sa.Column("title", sa.String(length=500), nullable=False, server_default=""),
@@ -76,7 +93,12 @@ def upgrade() -> None:
     op.create_table(
         "findings",
         sa.Column("id", postgresql.UUID(as_uuid=True), primary_key=True),
-        sa.Column("review_run_id", postgresql.UUID(as_uuid=True), sa.ForeignKey("review_runs.id", ondelete="CASCADE"), nullable=False),
+        sa.Column(
+            "review_run_id",
+            postgresql.UUID(as_uuid=True),
+            sa.ForeignKey("review_runs.id", ondelete="CASCADE"),
+            nullable=False,
+        ),
         sa.Column("category", sa.String(length=50), nullable=False),
         sa.Column("severity", sa.String(length=20), nullable=False),
         sa.Column("title", sa.String(length=255), nullable=False),
@@ -105,4 +127,3 @@ def downgrade() -> None:
     op.drop_table("review_runs")
     op.drop_table("policies")
     op.drop_table("repositories")
-
