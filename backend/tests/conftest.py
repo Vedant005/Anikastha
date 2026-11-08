@@ -1,11 +1,10 @@
-import asyncio
 import os
 from collections.abc import AsyncGenerator
-from typing import Any, Dict
 from unittest.mock import AsyncMock, MagicMock
+
+import pytest
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import rsa
-import pytest
 from httpx import ASGITransport, AsyncClient
 from sqlalchemy.ext.asyncio import (
     AsyncSession,
@@ -83,6 +82,7 @@ def mock_arq_pool():
 @pytest.fixture
 async def client(db_session: AsyncSession, mock_arq_pool) -> AsyncGenerator[AsyncClient, None]:
     """Test HTTP client with overridden DB session and ARQ queue dependencies."""
+
     async def override_get_db():
         yield db_session
 
@@ -97,4 +97,3 @@ async def client(db_session: AsyncSession, mock_arq_pool) -> AsyncGenerator[Asyn
         yield ac
 
     app.dependency_overrides.clear()
-

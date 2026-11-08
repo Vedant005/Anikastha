@@ -1,7 +1,7 @@
 import hashlib
 import hmac
 import json
-from unittest.mock import AsyncMock
+
 import pytest
 from httpx import AsyncClient
 from sqlalchemy import select
@@ -99,27 +99,21 @@ async def test_webhook_pr_opened_enqueues_review(client: AsyncClient, db_session
     assert "run_id" in data
 
     # Verify database persistence
-    res = await db_session.execute(
-        select(Repository).where(Repository.github_repo_id == 999888)
-    )
+    res = await db_session.execute(select(Repository).where(Repository.github_repo_id == 999888))
     repo = res.scalar_one_or_none()
     assert repo is not None
     assert repo.full_name == "octocat/super-app"
     assert repo.installation_id == 54321
 
     # Verify default policy was created
-    res_policy = await db_session.execute(
-        select(Policy).where(Policy.repository_id == repo.id)
-    )
+    res_policy = await db_session.execute(select(Policy).where(Policy.repository_id == repo.id))
     policy = res_policy.scalar_one_or_none()
     assert policy is not None
     assert policy.fail_on_severity == "HIGH"
     assert policy.block_prohibited_licenses is True
 
     # Verify review_run record was created with status PENDING
-    res_run = await db_session.execute(
-        select(ReviewRun).where(ReviewRun.pull_number == 101)
-    )
+    res_run = await db_session.execute(select(ReviewRun).where(ReviewRun.pull_number == 101))
     run = res_run.scalar_one_or_none()
     assert run is not None
     assert run.status == "PENDING"
@@ -155,4 +149,3 @@ async def test_webhook_pr_unhandled_action_ignored(client: AsyncClient):
     data = response.json()
     assert data["status"] == "ignored"
     assert data["action"] == "closed"
-

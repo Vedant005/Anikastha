@@ -9,4 +9,3 @@ async def test_health_check(client: AsyncClient):
     data = response.json()
     assert data["status"] in ("ok", "degraded")
     assert data["environment"] == "test"
-

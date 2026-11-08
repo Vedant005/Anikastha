@@ -1,5 +1,6 @@
 import hashlib
 import hmac
+
 from app.core.security import verify_github_signature
 
 
@@ -51,4 +52,3 @@ def test_verify_github_signature_missing_prefix():
 def test_verify_github_signature_empty_secret():
     payload = b'{"action": "opened"}'
     assert verify_github_signature(payload, "sha256=123", "") is False
-

@@ -1,5 +1,6 @@
 import time
 from unittest.mock import AsyncMock, MagicMock, patch
+
 import httpx
 import jwt
 import pytest
@@ -39,7 +40,11 @@ async def test_get_installation_access_token(rsa_key_pair):
 
     mock_client = AsyncMock(spec=httpx.AsyncClient)
     response_mock = AsyncMock()
-    response_mock.json = MagicMock(return_value=mock_response) if hasattr(MagicMock, 'return_value') else lambda: mock_response
+    response_mock.json = (
+        MagicMock(return_value=mock_response)
+        if hasattr(MagicMock, "return_value")
+        else lambda: mock_response
+    )
     response_mock.raise_for_status = MagicMock()
     mock_client.post = AsyncMock(return_value=response_mock)
 
