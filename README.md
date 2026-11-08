@@ -1,4 +1,4 @@
-# 🛡️ PR-Sentinel
+# PR-Sentinel
 
 > **Autonomous AI-Powered GitHub Pull Request Security Reviewer**
 
@@ -6,22 +6,22 @@ PR-Sentinel is an autonomous, context-aware security code reviewer that intercep
 
 ---
 
-## 🚀 Key Capabilities
+## Key Capabilities
 
-- **⚡ Sub-Second Webhook Processing**: Verifies GitHub HMAC-SHA256 signatures and offloads analysis to an asynchronous worker queue in <500ms.
-- **🌳 AST-Aware Code Context**: Leverages **Tree-sitter** (Python & TypeScript/JavaScript) to parse enclosing functions, classes, decorators, and imports around modified diff hunks.
-- **📦 OSV.dev CVE & License Auditing**: Checks changed package manifests (`requirements.txt`, `pyproject.toml`, `package.json`) against the OSV.dev vulnerability database and enforces SPDX license compliance.
-- **🤖 Multi-Agent Review Pipeline (LangGraph)**:
+- **Sub-Second Webhook Processing**: Verifies GitHub HMAC-SHA256 signatures and offloads analysis to an asynchronous worker queue in <500ms.
+- **AST-Aware Code Context**: Leverages **Tree-sitter** (Python & TypeScript/JavaScript) to parse enclosing functions, classes, decorators, and imports around modified diff hunks.
+- **OSV.dev CVE & License Auditing**: Checks changed package manifests (`requirements.txt`, `pyproject.toml`, `package.json`) against the OSV.dev vulnerability database and enforces SPDX license compliance.
+- **Multi-Agent Review Pipeline (LangGraph)**:
   - **Code Security Specialist**: Evaluates OWASP Top 10 vulnerabilities, injection risks, auth bypasses, and secret leaks.
   - **Dependency & License Specialist**: Correlates CVE matches and evaluates license compatibility.
   - **Synthesis & Deduplication Node**: Unifies cross-file findings and eliminates redundant alerts.
   - **Red-Team Verifier**: Adversarially evaluates candidate findings to eliminate false positives and strictly validates git diff line coordinates to prevent GitHub 422 API errors.
-- **💬 Actionable GitHub Inline Comments**: Posts line-targeted comments with formatted ````suggestion code replacements and sticky top-level review summaries.
-- **📊 Modern Web Dashboard**: Next.js App Router, Tailwind CSS v4, and Zustand UI for tracking review runs, inspecting findings, and configuring repository policies.
+- **Actionable GitHub Inline Comments**: Posts line-targeted comments with formatted ````suggestion code replacements and sticky top-level review summaries.
+- **Modern Web Dashboard**: Next.js App Router, Tailwind CSS v4, and Zustand UI for tracking review runs, inspecting findings, and configuring repository policies.
 
 ---
 
-## 🏛️ System Architecture
+## System Architecture
 
 ```mermaid
 flowchart TD
@@ -61,7 +61,7 @@ flowchart TD
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 | Layer | Technology | Details |
 | :--- | :--- | :--- |
@@ -77,19 +77,8 @@ flowchart TD
 
 ---
 
-## 📋 Phased Roadmap
 
-- [x] **Architecture & Agent Guidelines**: System blueprint approved, `AGENTS.md`, and configuration templates.
-- [ ] **Phase 1: Project Foundation & GitHub Integration**: Docker compose, FastAPI core, SQLAlchemy 2.0 models, GitHub App JWT auth, HMAC verification, and ARQ worker queue.
-- [ ] **Phase 2: Code Analysis & Repository Context Engine**: Unified diff parsing, Tree-sitter AST scope and symbol extraction for Python and TypeScript.
-- [ ] **Phase 3: Security Intelligence & Dependency Analysis**: `requirements.txt`/`package.json` manifest parsing, OSV.dev batch queries, and SPDX license enforcement.
-- [ ] **Phase 4: AI Review Engine & LangGraph Multi-Agent Orchestration**: Specialist agents, finding synthesis, adversarial red-team verifier, and verdict calculator.
-- [ ] **Phase 5: Finding Verification & GitHub Review Publishing**: Line-accurate inline comment publishing with ````suggestion blocks and sticky review summaries.
-- [ ] **Phase 6: Product Experience, Testing & Deployment**: Next.js portfolio dashboard with live review updates, comprehensive test suite, and Docker deployment.
-
----
-
-## 🏃 Getting Started
+## Getting Started
 
 ### Prerequisites
 - Docker and Docker Compose
@@ -99,7 +88,7 @@ flowchart TD
 
 ### 1. Clone & Configure
 ```bash
-git clone https://github.com/your-username/PrSentinel.git
+git clone https://github.com/Vedant005/PrSentinel.git
 cd PrSentinel
 cp .env.example .env
 # Edit .env and supply your credentials and LLM API key
@@ -116,5 +105,3 @@ curl http://localhost:8000/healthz
 ```
 
 For detailed agent rules, coding standards, and developer guidelines, see [AGENTS.md](file:///d:/Projects/PrSentinel/AGENTS.md).
-For the architectural design document, see the [Implementation Plan](file:///C:/Users/vedan/.gemini/antigravity/brain/15b401c6-faa2-4fc8-8770-296c04176592/pr_sentinel_implementation_plan.md).
-
