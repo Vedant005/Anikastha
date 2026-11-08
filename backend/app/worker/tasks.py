@@ -1,21 +1,21 @@
 import logging
 import time
 import uuid
-from datetime import datetime, timezone
-from typing import Any, Dict
+from datetime import UTC, datetime
+from typing import Any
+
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
 from app.core.database import AsyncSessionLocal
 from app.github.client import GitHubClient
-from app.models.policy import Policy
 from app.models.repository import Repository
 from app.models.review_run import ReviewRun
 
 logger = logging.getLogger("pr_sentinel.worker")
 
 
-async def process_pull_request_review(ctx: Dict[str, Any], run_id: str) -> Dict[str, Any]:
+async def process_pull_request_review(ctx: dict[str, Any], run_id: str) -> dict[str, Any]:
     """
     ARQ Background Task: Process security review for a GitHub Pull Request.
     """
@@ -27,9 +27,7 @@ async def process_pull_request_review(ctx: Dict[str, Any], run_id: str) -> Dict[
         # Load ReviewRun with Repository and Policy
         result = await session.execute(
             select(ReviewRun)
-            .options(
-                selectinload(ReviewRun.repository).selectinload(Repository.policy)
-            )
+            .options(selectinload(ReviewRun.repository).selectinload(Repository.policy))
             .where(ReviewRun.id == run_uuid)
         )
         review_run = result.scalar_one_or_none()
@@ -40,7 +38,7 @@ async def process_pull_request_review(ctx: Dict[str, Any], run_id: str) -> Dict[
 
         # Update status to PROCESSING
         review_run.status = "PROCESSING"
-        review_run.started_at = datetime.now(timezone.utc)
+        review_run.started_at = datetime.now(UTC)
         await session.commit()
 
         repo = review_run.repository
@@ -56,7 +54,7 @@ async def process_pull_request_review(ctx: Dict[str, Any], run_id: str) -> Dict[
                 pr_data = await gh_client.get_pull_request(
                     owner=owner, repo=repo_name, pull_number=review_run.pull_number
                 )
-                
+
                 # Retrieve diff
                 diff_text = await gh_client.get_pull_request_diff(
                     owner=owner, repo=repo_name, pull_number=review_run.pull_number
@@ -73,7 +71,7 @@ async def process_pull_request_review(ctx: Dict[str, Any], run_id: str) -> Dict[
                 # In Phase 1 foundation: complete baseline job lifecycle.
                 execution_time = int((time.time() - start_time) * 1000)
                 review_run.status = "COMPLETED"
-                review_run.completed_at = datetime.now(timezone.utc)
+                review_run.completed_at = datetime.now(UTC)
                 review_run.execution_time_ms = execution_time
                 review_run.summary_markdown = (
                     f"### 🛡️ PR-Sentinel Ingestion Complete\n\n"
@@ -97,7 +95,7 @@ async def process_pull_request_review(ctx: Dict[str, Any], run_id: str) -> Dict[
             execution_time = int((time.time() - start_time) * 1000)
             review_run.status = "FAILED"
             review_run.error_message = str(exc)
-            review_run.completed_at = datetime.now(timezone.utc)
+            review_run.completed_at = datetime.now(UTC)
             review_run.execution_time_ms = execution_time
             await session.commit()
             return {"status": "failed", "run_id": run_id, "error": str(exc)}
