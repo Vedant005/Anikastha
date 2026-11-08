@@ -14,6 +14,7 @@ from app.analyzer.osv_client import OSVClient
 from app.core.database import AsyncSessionLocal
 from app.github.client import GitHubClient
 from app.github.diff_parser import DiffParser
+from app.github.publisher import GitHubReviewPublisher
 from app.models.finding import Finding
 from app.models.repository import Repository
 from app.models.review_run import ReviewRun
@@ -167,7 +168,23 @@ async def process_pull_request_review(ctx: dict[str, Any], run_id: str) -> dict[
                     )
                     session.add(finding_record)
 
-                # 7. Update ReviewRun execution metrics & status
+                # 7. Publish Review to GitHub
+                publisher = GitHubReviewPublisher(gh_client)
+                try:
+                    await publisher.publish_review(
+                        owner=owner,
+                        repo=repo_name,
+                        pull_number=review_run.pull_number,
+                        commit_sha=review_run.commit_sha,
+                        verdict=verdict,
+                        summary_markdown=summary_markdown,
+                        verified_findings=verified_findings,
+                    )
+                    logger.info("Successfully published review to GitHub.")
+                except Exception as pub_exc:
+                    logger.error("Failed to publish review to GitHub: %s", pub_exc)
+
+                # 8. Update ReviewRun execution metrics & status
                 execution_time = int((time.time() - start_time) * 1000)
                 review_run.status = "COMPLETED"
                 review_run.verdict = verdict
