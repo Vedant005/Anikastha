@@ -1,8 +1,8 @@
 import base64
 import time
-from datetime import datetime, timezone
+from datetime import datetime
 from pathlib import Path
-from typing import Dict, Optional
+
 import httpx
 import jwt
 
@@ -11,7 +11,7 @@ from app.core.config import get_settings
 settings = get_settings()
 
 # In-memory cache for installation tokens: {installation_id: (token, expire_timestamp)}
-_token_cache: Dict[int, tuple[str, float]] = {}
+_token_cache: dict[int, tuple[str, float]] = {}
 
 
 def get_private_key_bytes() -> bytes:
@@ -34,8 +34,8 @@ def get_private_key_bytes() -> bytes:
 
 
 def generate_app_jwt(
-    app_id: Optional[str] = None,
-    private_key_bytes: Optional[bytes] = None,
+    app_id: str | None = None,
+    private_key_bytes: bytes | None = None,
 ) -> str:
     """
     Generate an RS256 signed JWT for authenticating as the GitHub App.
@@ -50,8 +50,8 @@ def generate_app_jwt(
 
     now = int(time.time())
     payload = {
-        "iat": now - 60,       # 1 minute in the past for clock drift
-        "exp": now + (9 * 60), # 9 minutes in future (GitHub max 10 min)
+        "iat": now - 60,  # 1 minute in the past for clock drift
+        "exp": now + (9 * 60),  # 9 minutes in future (GitHub max 10 min)
         "iss": str(app_id),
     }
 
@@ -61,7 +61,7 @@ def generate_app_jwt(
 
 async def get_installation_access_token(
     installation_id: int,
-    client: Optional[httpx.AsyncClient] = None,
+    client: httpx.AsyncClient | None = None,
 ) -> str:
     """
     Get or refresh an installation access token for a specific installation ID.
@@ -103,4 +103,3 @@ async def get_installation_access_token(
 def clear_token_cache() -> None:
     """Clear cached installation tokens."""
     _token_cache.clear()
-

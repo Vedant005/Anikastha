@@ -1,5 +1,6 @@
 import base64
-from typing import Any, Dict, List, Optional
+from typing import Any
+
 import httpx
 
 from app.github.auth import get_installation_access_token
@@ -12,7 +13,7 @@ class GitHubClient:
 
     BASE_URL = "https://api.github.com"
 
-    def __init__(self, installation_id: int, client: Optional[httpx.AsyncClient] = None):
+    def __init__(self, installation_id: int, client: httpx.AsyncClient | None = None):
         self.installation_id = installation_id
         self._external_client = client is not None
         self._client = client or httpx.AsyncClient(timeout=30.0)
@@ -24,7 +25,7 @@ class GitHubClient:
         if not self._external_client:
             await self._client.aclose()
 
-    async def _get_headers(self, accept: str = "application/vnd.github+json") -> Dict[str, str]:
+    async def _get_headers(self, accept: str = "application/vnd.github+json") -> dict[str, str]:
         token = await get_installation_access_token(self.installation_id, client=self._client)
         return {
             "Authorization": f"Bearer {token}",
@@ -33,7 +34,7 @@ class GitHubClient:
             "User-Agent": "PR-Sentinel-Security-Reviewer",
         }
 
-    async def get_pull_request(self, owner: str, repo: str, pull_number: int) -> Dict[str, Any]:
+    async def get_pull_request(self, owner: str, repo: str, pull_number: int) -> dict[str, Any]:
         """Fetch PR metadata."""
         headers = await self._get_headers()
         url = f"{self.BASE_URL}/repos/{owner}/{repo}/pulls/{pull_number}"
@@ -51,7 +52,7 @@ class GitHubClient:
 
     async def get_pull_request_files(
         self, owner: str, repo: str, pull_number: int
-    ) -> List[Dict[str, Any]]:
+    ) -> list[dict[str, Any]]:
         """Fetch list of changed files and their patch hunks in the PR."""
         headers = await self._get_headers()
         url = f"{self.BASE_URL}/repos/{owner}/{repo}/pulls/{pull_number}/files"
@@ -59,7 +60,7 @@ class GitHubClient:
         response.raise_for_status()
         return response.json()
 
-    async def get_file_content(self, owner: str, repo: str, path: str, ref: str) -> Optional[str]:
+    async def get_file_content(self, owner: str, repo: str, path: str, ref: str) -> str | None:
         """Fetch and base64 decode a file's content at a specific ref/commit SHA."""
         headers = await self._get_headers()
         url = f"{self.BASE_URL}/repos/{owner}/{repo}/contents/{path}?ref={ref}"
@@ -80,15 +81,15 @@ class GitHubClient:
         commit_id: str,
         event: str,  # APPROVE, REQUEST_CHANGES, COMMENT
         body: str,
-        comments: Optional[List[Dict[str, Any]]] = None,
-    ) -> Dict[str, Any]:
+        comments: list[dict[str, Any]] | None = None,
+    ) -> dict[str, Any]:
         """
         Create a GitHub PR review with a summary body and inline comments.
         Each comment: {"path": str, "line": int, "side": "RIGHT", "body": str}
         """
         headers = await self._get_headers()
         url = f"{self.BASE_URL}/repos/{owner}/{repo}/pulls/{pull_number}/reviews"
-        payload: Dict[str, Any] = {
+        payload: dict[str, Any] = {
             "commit_id": commit_id,
             "body": body,
             "event": event,
@@ -99,4 +100,3 @@ class GitHubClient:
         response = await self._client.post(url, json=payload, headers=headers)
         response.raise_for_status()
         return response.json()
-
