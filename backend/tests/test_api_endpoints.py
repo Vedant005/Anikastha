@@ -111,3 +111,11 @@ async def test_review_run_endpoints(client: AsyncClient, db_session, mock_arq_po
     assert res_rerun.status_code == 202
     assert res_rerun.json()["status"] == "queued"
     mock_arq_pool.enqueue_job.assert_called_with("process_pull_request_review", run_id=str(run.id))
+
+    # 6. Stream SSE events
+    res_stream = await client.get(f"/api/v1/reviews/{run.id}/events")
+    assert res_stream.status_code == 200
+    assert "text/event-stream" in res_stream.headers["content-type"]
+    text_content = res_stream.text
+    assert "data: " in text_content
+    assert str(run.id) in text_content
