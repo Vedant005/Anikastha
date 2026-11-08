@@ -85,6 +85,5 @@ def test_llm_factory_custom():
 
 
 def test_llm_factory_unsupported():
-    settings = Settings(LLM_PROVIDER="unsupported_provider")  # type: ignore
     with pytest.raises(ValueError, match="Unsupported LLM provider"):
-        LLMFactory.get_chat_model(settings=settings)
+        LLMFactory.get_chat_model(provider="unsupported_provider")
