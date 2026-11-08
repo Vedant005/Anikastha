@@ -34,12 +34,12 @@ flowchart TD
     WORKER -->|Fetch Diffs & Files| GH_CLIENT[GitHub API Client]
     
     subgraph Analysis_Engine [Code & Dependency Analysis Engine]
-        GH_CLIENT --> DIFF_P[Git Diff & Hunk Parser]
-        GH_CLIENT --> TS_PARSER[Tree-sitter AST Parser (Py/TS)]
+        GH_CLIENT["GH_CLIENT"] --> DIFF_P[Git Diff & Hunk Parser]
+        GH_CLIENT --> TS_PARSER["Tree-sitter AST Parser (Py/TS)"]
         GH_CLIENT --> DEP_PARSER[Manifest & Lockfile Parser]
         DEP_PARSER --> OSV_CLIENT[OSV.dev REST Client]
     end
-
+ 
     subgraph LangGraph_Review [LangGraph Multi-Agent Security Engine]
         DIFF_P & TS_PARSER & OSV_CLIENT --> STATE[Review Graph State]
         STATE --> CODE_AGENT[Code Security Specialist Node]
@@ -49,7 +49,7 @@ flowchart TD
     end
 
     VERIFIER -->|Publish Review & Inline Comments| GH_PUB[GitHub Review Publisher]
-    GH_PUB -->|POST /pulls/{id}/reviews| GH
+    GH_PUB -->|"POST /pulls/{id}/reviews"| GH   
     
     WORKER -->|Persist Results| DB[(PostgreSQL Database)]
     
