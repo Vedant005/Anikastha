@@ -23,11 +23,12 @@ async def code_specialist_node(state: ReviewState) -> dict[str, Any]:
         logger.info("No file contexts to analyze in code_specialist_node.")
         return {"raw_findings": raw_findings}
 
-    llm = LLMFactory.get_chat_model()
     try:
+        llm = LLMFactory.get_chat_model()
         structured_llm = llm.with_structured_output(CodeSecurityReport)
     except Exception as exc:
-        logger.warning("Structured output not supported directly: %s. Using standard LLM.", exc)
+        logger.warning("Could not initialize structured LLM for code specialist: %s", exc)
+        llm = None
         structured_llm = None
 
     for f_ctx in file_contexts:
