@@ -1,11 +1,10 @@
 import hashlib
 import hmac
-from typing import Optional
 
 
 def verify_github_signature(
     payload_body: bytes,
-    signature_header: Optional[str],
+    signature_header: str | None,
     secret: str,
 ) -> bool:
     """
@@ -34,4 +33,3 @@ def verify_github_signature(
     ).hexdigest()
 
     return hmac.compare_digest(received_sig, expected_sig)
-

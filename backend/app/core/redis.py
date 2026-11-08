@@ -1,4 +1,3 @@
-from typing import Optional
 from arq.connections import ArqRedis, create_pool
 from redis.asyncio import Redis, from_url
 
@@ -6,8 +5,8 @@ from app.core.config import get_settings
 
 settings = get_settings()
 
-_redis_client: Optional[Redis] = None
-_arq_pool: Optional[ArqRedis] = None
+_redis_client: Redis | None = None
+_arq_pool: ArqRedis | None = None
 
 
 async def get_redis_client() -> Redis:
@@ -39,4 +38,3 @@ async def close_arq_pool() -> None:
     if _arq_pool is not None:
         await _arq_pool.close()
         _arq_pool = None
-

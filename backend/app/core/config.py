@@ -1,5 +1,6 @@
 from functools import lru_cache
-from typing import List, Literal
+from typing import Literal
+
 from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
@@ -42,7 +43,7 @@ class Settings(BaseSettings):
     DEFAULT_FAIL_ON_SEVERITY: Literal["CRITICAL", "HIGH", "MEDIUM", "LOW"] = "HIGH"
     AUTO_REQUEST_CHANGES: bool = True
     BLOCK_PROHIBITED_LICENSES: bool = True
-    PROHIBITED_LICENSES: List[str] = Field(
+    PROHIBITED_LICENSES: list[str] = Field(
         default_factory=lambda: ["GPL-3.0", "AGPL-3.0", "SSPL-1.0"]
     )
 
@@ -50,4 +51,3 @@ class Settings(BaseSettings):
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
-
