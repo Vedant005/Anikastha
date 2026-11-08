@@ -1,5 +1,5 @@
 import uuid
-from typing import List, Optional
+
 from arq.connections import ArqRedis
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
@@ -15,15 +15,15 @@ router = APIRouter(prefix="/reviews", tags=["Reviews"])
 
 @router.get(
     "",
-    response_model=List[ReviewRunRead],
+    response_model=list[ReviewRunRead],
     summary="List Review Runs",
 )
 async def list_reviews(
-    repo_id: Optional[uuid.UUID] = Query(None, description="Filter by repository ID"),
+    repo_id: uuid.UUID | None = Query(None, description="Filter by repository ID"),
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
     db: AsyncSession = Depends(get_db),
-) -> List[ReviewRun]:
+) -> list[ReviewRun]:
     """Retrieve paginated list of recent review runs."""
     query = (
         select(ReviewRun)
@@ -50,9 +50,7 @@ async def get_review(
 ) -> ReviewRun:
     """Retrieve detailed information and findings for a specific review run."""
     result = await db.execute(
-        select(ReviewRun)
-        .options(selectinload(ReviewRun.findings))
-        .where(ReviewRun.id == review_id)
+        select(ReviewRun).options(selectinload(ReviewRun.findings)).where(ReviewRun.id == review_id)
     )
     review_run = result.scalar_one_or_none()
     if not review_run:
@@ -88,4 +86,3 @@ async def rerun_review(
 
     await arq_pool.enqueue_job("process_pull_request_review", run_id=str(review_id))
     return {"status": "queued", "run_id": str(review_id)}
-

@@ -1,6 +1,7 @@
 import json
 import logging
-from typing import Any, Dict
+from typing import Any
+
 from arq.connections import ArqRedis
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
 from sqlalchemy import select
@@ -31,7 +32,7 @@ async def handle_github_webhook(
     x_github_delivery: str | None = Header(None, alias="X-GitHub-Delivery"),
     db: AsyncSession = Depends(get_db),
     arq_pool: ArqRedis = Depends(get_arq_pool),
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Ingests GitHub App Webhooks:
     1. Validates HMAC SHA-256 signature against raw body.
@@ -69,7 +70,7 @@ async def handle_github_webhook(
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail=f"Invalid webhook JSON payload: {exc}",
-            )
+            ) from exc
 
         action = payload.action
         if action not in ("opened", "synchronize", "reopened"):
@@ -158,4 +159,3 @@ async def handle_github_webhook(
         }
 
     return {"status": "unhandled_event", "event": x_github_event}
-

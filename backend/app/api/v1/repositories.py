@@ -1,5 +1,5 @@
 import uuid
-from typing import List
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -16,17 +16,15 @@ router = APIRouter(prefix="/repositories", tags=["Repositories"])
 
 @router.get(
     "",
-    response_model=List[RepositoryRead],
+    response_model=list[RepositoryRead],
     summary="List Repositories",
 )
 async def list_repositories(
     db: AsyncSession = Depends(get_db),
-) -> List[Repository]:
+) -> list[Repository]:
     """List all connected GitHub repositories."""
     result = await db.execute(
-        select(Repository)
-        .options(selectinload(Repository.policy))
-        .order_by(Repository.full_name)
+        select(Repository).options(selectinload(Repository.policy)).order_by(Repository.full_name)
     )
     return list(result.scalars().all())
 
@@ -41,9 +39,7 @@ async def get_repository_policy(
     db: AsyncSession = Depends(get_db),
 ) -> Policy:
     """Retrieve security and licensing policy for a repository."""
-    result = await db.execute(
-        select(Policy).where(Policy.repository_id == repo_id)
-    )
+    result = await db.execute(select(Policy).where(Policy.repository_id == repo_id))
     policy = result.scalar_one_or_none()
     if not policy:
         raise HTTPException(
@@ -64,9 +60,7 @@ async def update_repository_policy(
     db: AsyncSession = Depends(get_db),
 ) -> Policy:
     """Update security severity threshold and license rules for a repository."""
-    result = await db.execute(
-        select(Policy).where(Policy.repository_id == repo_id)
-    )
+    result = await db.execute(select(Policy).where(Policy.repository_id == repo_id))
     policy = result.scalar_one_or_none()
     if not policy:
         raise HTTPException(
@@ -81,4 +75,3 @@ async def update_repository_policy(
     await db.commit()
     await db.refresh(policy)
     return policy
-
