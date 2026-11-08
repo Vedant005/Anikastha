@@ -1,4 +1,5 @@
-from typing import Any, Literal
+import operator
+from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel
 from typing_extensions import TypedDict
@@ -53,7 +54,7 @@ class ReviewState(TypedDict):
     vulnerabilities: list[dict[str, Any]]
     license_alerts: list[dict[str, Any]]
     policy: dict[str, Any]
-    raw_findings: list[RawFinding]
+    raw_findings: Annotated[list[RawFinding], operator.add]
     synthesized_findings: list[RawFinding]
     verified_findings: list[VerifiedFinding]
     verdict: str  # APPROVE, COMMENT, REQUEST_CHANGES

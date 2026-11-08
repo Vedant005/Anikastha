@@ -38,11 +38,11 @@ async def verifier_node(state: ReviewState) -> dict[str, Any]:
     candidate_dicts = [f.model_dump() for f in synthesized]
     valid_lines_serializable = {k: sorted(list(v)) for k, v in valid_diff_lines.items()}
 
-    llm = LLMFactory.get_chat_model()
     try:
+        llm = LLMFactory.get_chat_model()
         structured_llm = llm.with_structured_output(VerificationReport)
     except Exception as exc:
-        logger.warning("Structured output not supported directly on verifier: %s", exc)
+        logger.warning("Could not initialize structured LLM on verifier: %s", exc)
         structured_llm = None
 
     user_prompt = format_verifier_prompt(

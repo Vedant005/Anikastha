@@ -37,8 +37,8 @@ class LLMFactory:
         if prov == "gemini":
             from langchain_google_genai import ChatGoogleGenerativeAI
 
-            api_key = cfg.GEMINI_API_KEY
-            if not api_key:
+            api_key = cfg.GEMINI_API_KEY or "dummy_key_for_testing"
+            if not cfg.GEMINI_API_KEY:
                 logger.warning("GEMINI_API_KEY is not set.")
             return ChatGoogleGenerativeAI(
                 model=model,
@@ -49,8 +49,8 @@ class LLMFactory:
         elif prov == "openai":
             from langchain_openai import ChatOpenAI
 
-            api_key = cfg.OPENAI_API_KEY
-            if not api_key:
+            api_key = cfg.OPENAI_API_KEY or "dummy_key_for_testing"
+            if not cfg.OPENAI_API_KEY:
                 logger.warning("OPENAI_API_KEY is not set.")
             base_url = cfg.LLM_BASE_URL if cfg.LLM_BASE_URL else None
             return ChatOpenAI(
@@ -63,8 +63,8 @@ class LLMFactory:
         elif prov == "anthropic":
             from langchain_anthropic import ChatAnthropic
 
-            api_key = cfg.ANTHROPIC_API_KEY
-            if not api_key:
+            api_key = cfg.ANTHROPIC_API_KEY or "dummy_key_for_testing"
+            if not cfg.ANTHROPIC_API_KEY:
                 logger.warning("ANTHROPIC_API_KEY is not set.")
             return ChatAnthropic(
                 model=model,
@@ -75,8 +75,8 @@ class LLMFactory:
         elif prov == "groq":
             from langchain_openai import ChatOpenAI
 
-            api_key = cfg.GROQ_API_KEY
-            if not api_key:
+            api_key = cfg.GROQ_API_KEY or "dummy_key_for_testing"
+            if not cfg.GROQ_API_KEY:
                 logger.warning("GROQ_API_KEY is not set.")
             base_url = cfg.LLM_BASE_URL or "https://api.groq.com/openai/v1"
             return ChatOpenAI(
@@ -89,8 +89,8 @@ class LLMFactory:
         elif prov == "openrouter":
             from langchain_openai import ChatOpenAI
 
-            api_key = cfg.OPENROUTER_API_KEY
-            if not api_key:
+            api_key = cfg.OPENROUTER_API_KEY or "dummy_key_for_testing"
+            if not cfg.OPENROUTER_API_KEY:
                 logger.warning("OPENROUTER_API_KEY is not set.")
             base_url = cfg.LLM_BASE_URL or "https://openrouter.ai/api/v1"
             return ChatOpenAI(
@@ -103,8 +103,8 @@ class LLMFactory:
         elif prov == "huggingface":
             from langchain_openai import ChatOpenAI
 
-            api_key = cfg.HUGGINGFACE_API_KEY
-            if not api_key:
+            api_key = cfg.HUGGINGFACE_API_KEY or "dummy_key_for_testing"
+            if not cfg.HUGGINGFACE_API_KEY:
                 logger.warning("HUGGINGFACE_API_KEY is not set.")
             base_url = cfg.LLM_BASE_URL or "https://api-inference.huggingface.co/v1"
             return ChatOpenAI(
