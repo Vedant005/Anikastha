@@ -1,7 +1,8 @@
 import uuid
-from datetime import datetime, timezone
-from typing import TYPE_CHECKING, List, Optional
-from sqlalchemy import BigInteger, DateTime, ForeignKey, Integer, String, Text
+from datetime import UTC, datetime
+from typing import TYPE_CHECKING
+
+from sqlalchemy import DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -13,7 +14,7 @@ if TYPE_CHECKING:
 
 
 def utc_now() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 class ReviewRun(Base):
@@ -55,7 +56,7 @@ class ReviewRun(Base):
         index=True,
         nullable=False,
     )  # PENDING, PROCESSING, COMPLETED, FAILED
-    verdict: Mapped[Optional[str]] = mapped_column(
+    verdict: Mapped[str | None] = mapped_column(
         String(30),
         nullable=True,
     )  # APPROVE, COMMENT, REQUEST_CHANGES
@@ -84,23 +85,23 @@ class ReviewRun(Base):
         default=0,
         nullable=False,
     )
-    summary_markdown: Mapped[Optional[str]] = mapped_column(
+    summary_markdown: Mapped[str | None] = mapped_column(
         Text,
         nullable=True,
     )
-    error_message: Mapped[Optional[str]] = mapped_column(
+    error_message: Mapped[str | None] = mapped_column(
         Text,
         nullable=True,
     )
-    execution_time_ms: Mapped[Optional[int]] = mapped_column(
+    execution_time_ms: Mapped[int | None] = mapped_column(
         Integer,
         nullable=True,
     )
-    started_at: Mapped[Optional[datetime]] = mapped_column(
+    started_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
         nullable=True,
     )
-    completed_at: Mapped[Optional[datetime]] = mapped_column(
+    completed_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
         nullable=True,
     )
@@ -115,10 +116,9 @@ class ReviewRun(Base):
         "Repository",
         back_populates="review_runs",
     )
-    findings: Mapped[List["Finding"]] = relationship(
+    findings: Mapped[list["Finding"]] = relationship(
         "Finding",
         back_populates="review_run",
         cascade="all, delete-orphan",
         order_by="Finding.created_at",
     )
-

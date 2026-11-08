@@ -1,6 +1,7 @@
 import uuid
-from datetime import datetime, timezone
-from typing import TYPE_CHECKING, List, Optional
+from datetime import UTC, datetime
+from typing import TYPE_CHECKING, Optional
+
 from sqlalchemy import BigInteger, Boolean, DateTime, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -13,7 +14,7 @@ if TYPE_CHECKING:
 
 
 def utc_now() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 class Repository(Base):
@@ -64,10 +65,9 @@ class Repository(Base):
         uselist=False,
         cascade="all, delete-orphan",
     )
-    review_runs: Mapped[List["ReviewRun"]] = relationship(
+    review_runs: Mapped[list["ReviewRun"]] = relationship(
         "ReviewRun",
         back_populates="repository",
         cascade="all, delete-orphan",
         order_by="desc(ReviewRun.created_at)",
     )
-

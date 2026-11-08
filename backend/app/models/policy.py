@@ -1,7 +1,8 @@
 import uuid
-from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Any, List
-from sqlalchemy import Boolean, DateTime, ForeignKey, JSON, String
+from datetime import UTC, datetime
+from typing import TYPE_CHECKING
+
+from sqlalchemy import JSON, Boolean, DateTime, ForeignKey, String
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -12,7 +13,7 @@ if TYPE_CHECKING:
 
 
 def utc_now() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 class Policy(Base):
@@ -39,7 +40,7 @@ class Policy(Base):
         default=True,
         nullable=False,
     )
-    prohibited_licenses: Mapped[List[str]] = mapped_column(
+    prohibited_licenses: Mapped[list[str]] = mapped_column(
         JSON,
         default=lambda: ["GPL-3.0", "AGPL-3.0", "SSPL-1.0"],
         nullable=False,
@@ -61,4 +62,3 @@ class Policy(Base):
         "Repository",
         back_populates="policy",
     )
-

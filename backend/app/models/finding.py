@@ -1,6 +1,7 @@
 import uuid
-from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Optional
+from datetime import UTC, datetime
+from typing import TYPE_CHECKING
+
 from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -12,7 +13,7 @@ if TYPE_CHECKING:
 
 
 def utc_now() -> datetime:
-    return datetime.now(timezone.utc)
+    return datetime.now(UTC)
 
 
 class Finding(Base):
@@ -51,35 +52,35 @@ class Finding(Base):
         String(500),
         nullable=False,
     )
-    line_start: Mapped[Optional[int]] = mapped_column(
+    line_start: Mapped[int | None] = mapped_column(
         Integer,
         nullable=True,
     )
-    line_end: Mapped[Optional[int]] = mapped_column(
+    line_end: Mapped[int | None] = mapped_column(
         Integer,
         nullable=True,
     )
-    code_snippet: Mapped[Optional[str]] = mapped_column(
+    code_snippet: Mapped[str | None] = mapped_column(
         Text,
         nullable=True,
     )
-    suggestion_markdown: Mapped[Optional[str]] = mapped_column(
+    suggestion_markdown: Mapped[str | None] = mapped_column(
         Text,
         nullable=True,
     )
-    cve_id: Mapped[Optional[str]] = mapped_column(
+    cve_id: Mapped[str | None] = mapped_column(
         String(100),
         nullable=True,
     )
-    package_name: Mapped[Optional[str]] = mapped_column(
+    package_name: Mapped[str | None] = mapped_column(
         String(255),
         nullable=True,
     )
-    current_version: Mapped[Optional[str]] = mapped_column(
+    current_version: Mapped[str | None] = mapped_column(
         String(100),
         nullable=True,
     )
-    fixed_version: Mapped[Optional[str]] = mapped_column(
+    fixed_version: Mapped[str | None] = mapped_column(
         String(100),
         nullable=True,
     )
@@ -88,7 +89,7 @@ class Finding(Base):
         default=False,
         nullable=False,
     )
-    verification_reason: Mapped[Optional[str]] = mapped_column(
+    verification_reason: Mapped[str | None] = mapped_column(
         Text,
         nullable=True,
     )
@@ -108,4 +109,3 @@ class Finding(Base):
         "ReviewRun",
         back_populates="findings",
     )
-
