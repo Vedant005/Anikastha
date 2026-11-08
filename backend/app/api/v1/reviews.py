@@ -1,7 +1,11 @@
+import asyncio
+import json
 import uuid
+from collections.abc import AsyncGenerator
 
 from arq.connections import ArqRedis
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -86,3 +90,55 @@ async def rerun_review(
 
     await arq_pool.enqueue_job("process_pull_request_review", run_id=str(review_id))
     return {"status": "queued", "run_id": str(review_id)}
+
+
+@router.get(
+    "/{review_id}/events",
+    summary="Live Review Event Stream (SSE)",
+)
+async def stream_review_events(
+    review_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+) -> StreamingResponse:
+    """Stream real-time status updates for a review run via Server-Sent Events."""
+
+    async def event_generator() -> AsyncGenerator[str, None]:
+        max_iterations = 60  # max 2 minutes of streaming
+        for _ in range(max_iterations):
+            result = await db.execute(
+                select(ReviewRun)
+                .options(selectinload(ReviewRun.findings))
+                .where(ReviewRun.id == review_id)
+            )
+            run = result.scalar_one_or_none()
+            if not run:
+                yield f"data: {json.dumps({'error': 'not_found'})}\n\n"
+                break
+
+            payload = {
+                "id": str(run.id),
+                "status": run.status,
+                "verdict": run.verdict,
+                "total_findings": run.total_findings,
+                "critical_count": run.critical_count,
+                "high_count": run.high_count,
+                "medium_count": run.medium_count,
+                "low_count": run.low_count,
+                "execution_time_ms": run.execution_time_ms,
+            }
+            yield f"data: {json.dumps(payload)}\n\n"
+
+            if run.status in ("COMPLETED", "FAILED"):
+                break
+
+            await asyncio.sleep(1.5)
+
+    return StreamingResponse(
+        event_generator(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "Connection": "keep-alive",
+            "X-Accel-Buffering": "no",
+        },
+    )
