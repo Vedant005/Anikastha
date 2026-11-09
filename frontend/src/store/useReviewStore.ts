@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { Repository, ReviewRun } from "@/lib/types";
-import { fetchRepositories, fetchReviews } from "../lib/api.ts";
+import { fetchRepositories, fetchReviews } from "../lib/api";
 
 interface ReviewStoreState {
   repositories: Repository[];
