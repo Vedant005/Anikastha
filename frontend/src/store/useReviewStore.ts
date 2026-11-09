@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import { Repository, ReviewRun } from "@/lib/types";
-import { fetchRepositories, fetchReviews } from "@/lib/api";
+import { fetchRepositories, fetchReviews } from "../lib/api";
 
 interface ReviewStoreState {
   repositories: Repository[];
@@ -11,7 +11,9 @@ interface ReviewStoreState {
 
   loadInitialData: () => Promise<void>;
   setSelectedRepoId: (repoId: string | null) => void;
-  updateReviewInList: (updatedReview: Partial<ReviewRun> & { id: string }) => void;
+  updateReviewInList: (
+    updatedReview: Partial<ReviewRun> & { id: string },
+  ) => void;
 }
 
 export const useReviewStore = create<ReviewStoreState>((set, get) => ({
@@ -24,10 +26,16 @@ export const useReviewStore = create<ReviewStoreState>((set, get) => ({
   loadInitialData: async () => {
     set({ isLoading: true, error: null });
     try {
-      const [repos, revs] = await Promise.all([fetchRepositories(), fetchReviews()]);
+      const [repos, revs] = await Promise.all([
+        fetchRepositories(),
+        fetchReviews(),
+      ]);
       set({ repositories: repos, reviews: revs, isLoading: false });
     } catch (err: any) {
-      set({ error: err.message || "Failed to load dashboard data", isLoading: false });
+      set({
+        error: err.message || "Failed to load dashboard data",
+        isLoading: false,
+      });
     }
   },
 
