@@ -29,9 +29,17 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
     # Initialize tables automatically for SQLite/Dev mode if needed
     if settings.ENVIRONMENT in ("development", "test"):
-        async with engine.begin() as conn:
-            await conn.run_sync(Base.metadata.create_all)
-        logger.info("Database schemas verified.")
+        try:
+            async with engine.begin() as conn:
+                await conn.run_sync(Base.metadata.create_all)
+            logger.info("Database schemas verified.")
+        except Exception as exc:
+            logger.error(
+                "Database connection failed during startup: %s. "
+                "If deploying to cloud (Render, Railway, etc.), ensure DATABASE_URL is set in environment variables.",
+                exc,
+            )
+            raise
 
     # Validate Redis connection
     try:

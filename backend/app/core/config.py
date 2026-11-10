@@ -1,7 +1,7 @@
 from functools import lru_cache
 from typing import Literal
 
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -22,6 +22,20 @@ class Settings(BaseSettings):
 
     # PostgreSQL Database
     DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/pr_sentinel"
+
+    @field_validator("DATABASE_URL", mode="before")
+    @classmethod
+    def assemble_db_connection(cls, v: str) -> str:
+        if isinstance(v, str):
+            # Automatically normalize standard cloud PostgreSQL URLs to asyncpg
+            if v.startswith("postgres://"):
+                v = v.replace("postgres://", "postgresql+asyncpg://", 1)
+            elif v.startswith("postgresql://") and not v.startswith("postgresql+asyncpg://"):
+                v = v.replace("postgresql://", "postgresql+asyncpg://", 1)
+            # Handle asyncpg sslmode compatibility
+            if "sslmode=" in v:
+                v = v.replace("sslmode=require", "ssl=require").replace("sslmode=prefer", "ssl=prefer")
+        return v
 
     # Redis
     REDIS_URL: str = "redis://localhost:6379/0"
