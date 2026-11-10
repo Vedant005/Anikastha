@@ -1,8 +1,10 @@
 import type { NextConfig } from "next";
 
+const isStandalone = process.env.NEXT_OUTPUT === "standalone";
+
 const nextConfig: NextConfig = {
   reactStrictMode: true,
-  output: "standalone",
+  ...(isStandalone ? { output: "standalone" as const } : {}),
   async rewrites() {
     return [
       {
