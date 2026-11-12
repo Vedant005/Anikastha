@@ -149,3 +149,45 @@ async def test_webhook_pr_unhandled_action_ignored(client: AsyncClient):
     data = response.json()
     assert data["status"] == "ignored"
     assert data["action"] == "closed"
+
+
+@pytest.mark.asyncio
+async def test_webhook_installation_creates_repositories(client: AsyncClient, db_session):
+    payload_data = {
+        "action": "created",
+        "installation": {"id": 998877},
+        "repositories": [
+            {"id": 445566, "name": "my-service", "full_name": "acme/my-service"},
+            {"id": 445567, "name": "my-worker", "full_name": "acme/my-worker"},
+        ],
+    }
+    payload_bytes = json.dumps(payload_data).encode("utf-8")
+    sig = sign_payload(payload_bytes)
+
+    response = await client.post(
+        "/api/v1/webhooks/github",
+        content=payload_bytes,
+        headers={
+            "X-GitHub-Event": "installation",
+            "X-Hub-Signature-256": sig,
+            "Content-Type": "application/json",
+        },
+    )
+    assert response.status_code == 202
+    assert response.json()["status"] == "success"
+
+    # Verify both repositories and their default policies were created
+    res = await db_session.execute(
+        select(Repository).where(Repository.installation_id == 998877)
+    )
+    repos = res.scalars().all()
+    assert len(repos) == 2
+    assert {r.full_name for r in repos} == {"acme/my-service", "acme/my-worker"}
+
+    # Verify default policy was created
+    pol_res = await db_session.execute(
+        select(Policy).where(Policy.repository_id == repos[0].id)
+    )
+    policy = pol_res.scalar_one_or_none()
+    assert policy is not None
+    assert policy.fail_on_severity == "HIGH"
