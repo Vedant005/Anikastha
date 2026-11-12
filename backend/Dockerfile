@@ -20,10 +20,11 @@ FROM python:3.12-slim AS runtime
 
 WORKDIR /app
 
-# Install runtime dependencies (libpq for postgresql)
+# Install runtime dependencies (libpq for postgresql, redis-server, curl)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libpq5 \
     curl \
+    redis-server \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy installed packages from builder
@@ -33,8 +34,11 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 # Copy backend application code
 COPY . .
 
+# Ensure startup script is executable
+RUN chmod +x /app/start.sh
+
 ENV PORT=8000
 EXPOSE 8000
 
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+CMD ["/app/start.sh"]
 
