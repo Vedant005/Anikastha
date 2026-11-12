@@ -1,6 +1,6 @@
 import { Policy, Repository, ReviewRun } from "./types";
 
-const API_BASE =
+export const API_BASE =
   process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api/v1";
 
 export async function fetchReviews(
