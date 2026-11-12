@@ -1,4 +1,4 @@
-from arq.connections import ArqRedis, create_pool
+from arq.connections import ArqRedis, RedisSettings, create_pool
 from redis.asyncio import Redis, from_url
 
 from app.core.config import get_settings
@@ -29,7 +29,8 @@ async def close_redis_client() -> None:
 async def get_arq_pool() -> ArqRedis:
     global _arq_pool
     if _arq_pool is None:
-        _arq_pool = await create_pool(settings.REDIS_URL)
+        redis_settings = RedisSettings.from_dsn(settings.REDIS_URL)
+        _arq_pool = await create_pool(redis_settings)
     return _arq_pool
 
 
