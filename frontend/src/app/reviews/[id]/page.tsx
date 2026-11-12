@@ -2,7 +2,7 @@
 
 import { useEffect, useState, use } from "react";
 import Link from "next/link";
-import { fetchReviewById, rerunReview } from "@/lib/api";
+import { fetchReviewById, rerunReview, API_BASE } from "@/lib/api";
 import { ReviewRun } from "@/lib/types";
 import { StatusBadge, VerdictBadge } from "@/components/StatusBadge";
 import { FindingCard } from "@/components/FindingCard";
@@ -41,7 +41,7 @@ export default function ReviewDetailPage({
       return;
     }
 
-    const eventSource = new EventSource(`http://localhost:8000/api/v1/reviews/${reviewId}/events`);
+    const eventSource = new EventSource(`${API_BASE}/reviews/${reviewId}/events`);
 
     eventSource.onmessage = (event) => {
       try {
