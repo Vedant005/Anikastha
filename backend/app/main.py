@@ -27,19 +27,18 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Application lifespan manager: initialize connections on startup and cleanup on shutdown."""
     logger.info("Initializing PR-Sentinel backend (env=%s)...", settings.ENVIRONMENT)
 
-    # Initialize tables automatically for SQLite/Dev mode if needed
-    if settings.ENVIRONMENT in ("development", "test"):
-        try:
-            async with engine.begin() as conn:
-                await conn.run_sync(Base.metadata.create_all)
-            logger.info("Database schemas verified.")
-        except Exception as exc:
-            logger.error(
-                "Database connection failed during startup: %s. "
-                "If deploying to cloud (Render, Railway, etc.), ensure DATABASE_URL is set in environment variables.",
-                exc,
-            )
-            raise
+    # Automatically ensure database schemas/tables exist on startup
+    try:
+        async with engine.begin() as conn:
+            await conn.run_sync(Base.metadata.create_all)
+        logger.info("Database schemas verified.")
+    except Exception as exc:
+        logger.error(
+            "Database connection/schema initialization failed during startup: %s. "
+            "If deploying to cloud (Render, Railway, etc.), ensure DATABASE_URL is set in environment variables.",
+            exc,
+        )
+        raise
 
     # Validate Redis connection
     try:
