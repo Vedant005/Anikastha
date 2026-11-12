@@ -4,7 +4,7 @@ from typing import Any
 
 from arq.connections import ArqRedis
 from fastapi import APIRouter, Depends, Header, HTTPException, Request, status
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.api.deps import get_arq_pool, get_db
@@ -18,6 +18,45 @@ from app.schemas.webhook import GitHubWebhookPayload
 logger = logging.getLogger("pr_sentinel.webhook")
 router = APIRouter(prefix="/webhooks", tags=["Webhooks"])
 settings = get_settings()
+
+
+async def _upsert_repository(
+    db: AsyncSession,
+    repo_id: int,
+    full_name: str,
+    installation_id: int,
+) -> Repository:
+    """Helper to create or update a repository and its default policy."""
+    result = await db.execute(
+        select(Repository).where(Repository.github_repo_id == repo_id)
+    )
+    repo = result.scalar_one_or_none()
+
+    if not repo:
+        repo = Repository(
+            github_repo_id=repo_id,
+            full_name=full_name,
+            installation_id=installation_id,
+            is_active=True,
+        )
+        db.add(repo)
+        await db.flush()
+
+        default_policy = Policy(
+            repository_id=repo.id,
+            fail_on_severity=settings.DEFAULT_FAIL_ON_SEVERITY,
+            block_prohibited_licenses=settings.BLOCK_PROHIBITED_LICENSES,
+            prohibited_licenses=settings.PROHIBITED_LICENSES,
+            auto_request_changes=settings.AUTO_REQUEST_CHANGES,
+        )
+        db.add(default_policy)
+        await db.flush()
+    else:
+        repo.installation_id = installation_id
+        repo.full_name = full_name
+        repo.is_active = True
+
+    return repo
 
 
 @router.post(
@@ -60,7 +99,53 @@ async def handle_github_webhook(
         logger.info("GitHub ping event received for delivery=%s", x_github_delivery)
         return {"status": "pong", "delivery": x_github_delivery}
 
-    # 3. Pull Request Events
+    # 3. App Installation Events (When user installs the GitHub App on repositories)
+    if x_github_event in ("installation", "installation_repositories"):
+        try:
+            payload_data = json.loads(body_bytes.decode("utf-8"))
+        except Exception as exc:
+            logger.error("Failed to parse installation webhook payload: %s", exc)
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"Invalid webhook JSON payload: {exc}",
+            ) from exc
+
+        action = payload_data.get("action")
+        installation_id = payload_data.get("installation", {}).get("id")
+        if not installation_id:
+            return {"status": "ignored", "reason": "missing_installation_id"}
+
+        # Collect repositories added in this event
+        repos_added = payload_data.get("repositories", []) or payload_data.get("repositories_added", [])
+        for r in repos_added:
+            await _upsert_repository(
+                db=db,
+                repo_id=r["id"],
+                full_name=r["full_name"],
+                installation_id=installation_id,
+            )
+
+        # Collect repositories removed
+        repos_removed = payload_data.get("repositories_removed", [])
+        if action == "deleted":
+            await db.execute(
+                update(Repository)
+                .where(Repository.installation_id == installation_id)
+                .values(is_active=False)
+            )
+        elif repos_removed:
+            for r in repos_removed:
+                await db.execute(
+                    update(Repository)
+                    .where(Repository.github_repo_id == r["id"])
+                    .values(is_active=False)
+                )
+
+        await db.commit()
+        logger.info("Successfully processed GitHub %s event (action=%s)", x_github_event, action)
+        return {"status": "success", "event": x_github_event, "action": action}
+
+    # 4. Pull Request Events
     if x_github_event == "pull_request":
         try:
             payload_data = json.loads(body_bytes.decode("utf-8"))
@@ -88,36 +173,13 @@ async def handle_github_webhook(
         pr_data = payload.pull_request
         installation_id = payload.installation.id
 
-        # Upsert Repository record
-        result = await db.execute(
-            select(Repository).where(Repository.github_repo_id == repo_data.id)
+        # Upsert Repository and default Policy
+        repo = await _upsert_repository(
+            db=db,
+            repo_id=repo_data.id,
+            full_name=repo_data.full_name,
+            installation_id=installation_id,
         )
-        repo = result.scalar_one_or_none()
-
-        if not repo:
-            repo = Repository(
-                github_repo_id=repo_data.id,
-                full_name=repo_data.full_name,
-                installation_id=installation_id,
-                is_active=True,
-            )
-            db.add(repo)
-            await db.flush()
-
-            # Create default policy for new repository
-            default_policy = Policy(
-                repository_id=repo.id,
-                fail_on_severity=settings.DEFAULT_FAIL_ON_SEVERITY,
-                block_prohibited_licenses=settings.BLOCK_PROHIBITED_LICENSES,
-                prohibited_licenses=settings.PROHIBITED_LICENSES,
-                auto_request_changes=settings.AUTO_REQUEST_CHANGES,
-            )
-            db.add(default_policy)
-            await db.flush()
-        else:
-            # Update installation_id or name in case it changed
-            repo.installation_id = installation_id
-            repo.full_name = repo_data.full_name
 
         # Create ReviewRun entry with status PENDING
         review_run = ReviewRun(
