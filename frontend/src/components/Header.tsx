@@ -1,38 +1,131 @@
+"use client";
+
+import React from "react";
 import Link from "next/link";
-import { Shield, GitPullRequest, Settings } from "lucide-react";
+import { SlidersHorizontal, Plus, RefreshCw } from "lucide-react";
+import { ThemeToggle } from "./ThemeToggle";
+import { useReviewStore } from "@/store/useReviewStore";
 
-export function Header() {
+export type FilterStatus = "ALL" | "REQUEST_CHANGES" | "APPROVE" | "PROCESSING";
+
+interface HeaderProps {
+  currentFilter?: FilterStatus;
+  onFilterChange?: (filter: FilterStatus) => void;
+  onRefresh?: () => void;
+  isRefreshing?: boolean;
+}
+
+export function Header({
+  currentFilter = "ALL",
+  onFilterChange,
+  onRefresh,
+  isRefreshing = false,
+}: HeaderProps) {
+  const { loadInitialData, isLoading } = useReviewStore();
+
+  const handleRefresh = () => {
+    if (onRefresh) {
+      onRefresh();
+    } else {
+      loadInitialData();
+    }
+  };
+
   return (
-    <header className="border-b border-slate-800 bg-slate-950/80 backdrop-blur sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-xl bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center shadow-lg shadow-cyan-500/20">
-            <Shield className="h-6 w-6 text-white" />
-          </div>
-          <div>
-            <span className="font-bold text-lg text-slate-100 tracking-tight">PR-Sentinel</span>
-            <span className="ml-2 text-xs font-semibold px-2 py-0.5 rounded-full bg-cyan-950 text-cyan-400 border border-cyan-800">
-              AI Security
-            </span>
-          </div>
+    <header className="sticky top-0 z-30 bg-[var(--surface)] border-b border-[var(--hairline)] px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
+      {/* Breadcrumb / Section Header */}
+      <div className="flex items-center gap-2 text-xs font-mono">
+        <Link
+          href="/"
+          className="text-[var(--ink-secondary)] hover:text-[var(--ink-primary)] transition-colors"
+        >
+          workspace
         </Link>
+        <span className="text-[var(--ink-muted)]">/</span>
+        <span className="text-[var(--ink-secondary)]">pr-sentinel</span>
+        <span className="text-[var(--ink-muted)]">/</span>
+        <span className="text-[var(--ink-primary)] font-medium">reviews</span>
+      </div>
 
-        <nav className="flex items-center gap-6 text-sm font-medium">
-          <Link
-            href="/"
-            className="flex items-center gap-2 text-slate-300 hover:text-white transition-colors"
+      {/* Center Controls: Segmented Filter Controls */}
+      <div className="flex items-center gap-2">
+        <div className="inline-flex p-0.5 border border-[var(--hairline)] bg-[var(--canvas)] rounded-sm text-[11px] font-mono">
+          <button
+            type="button"
+            onClick={() => onFilterChange && onFilterChange("ALL")}
+            className={`px-2.5 py-1 rounded-xs transition-colors ${
+              currentFilter === "ALL"
+                ? "bg-[var(--surface)] text-[var(--ink-primary)] font-medium shadow-none border border-[var(--hairline)]"
+                : "text-[var(--ink-secondary)] hover:text-[var(--ink-primary)]"
+            }`}
           >
-            <GitPullRequest className="h-4 w-4 text-cyan-400" />
-            Reviews
-          </Link>
-          <Link
-            href="/repositories"
-            className="flex items-center gap-2 text-slate-300 hover:text-white transition-colors"
+            All
+          </button>
+          <button
+            type="button"
+            onClick={() => onFilterChange && onFilterChange("REQUEST_CHANGES")}
+            className={`px-2.5 py-1 rounded-xs transition-colors flex items-center gap-1.5 ${
+              currentFilter === "REQUEST_CHANGES"
+                ? "bg-[var(--surface)] text-[var(--signal-red)] font-medium border border-[var(--hairline)]"
+                : "text-[var(--ink-secondary)] hover:text-[var(--ink-primary)]"
+            }`}
           >
-            <Settings className="h-4 w-4 text-blue-400" />
-            Repositories & Policy
-          </Link>
-        </nav>
+            <span className="w-1.5 h-1.5 rounded-full bg-[var(--signal-red)]" />
+            Changes Requested
+          </button>
+          <button
+            type="button"
+            onClick={() => onFilterChange && onFilterChange("APPROVE")}
+            className={`px-2.5 py-1 rounded-xs transition-colors ${
+              currentFilter === "APPROVE"
+                ? "bg-[var(--surface)] text-[var(--ink-primary)] font-medium border border-[var(--hairline)]"
+                : "text-[var(--ink-secondary)] hover:text-[var(--ink-primary)]"
+            }`}
+          >
+            Approved
+          </button>
+          <button
+            type="button"
+            onClick={() => onFilterChange && onFilterChange("PROCESSING")}
+            className={`px-2.5 py-1 rounded-xs transition-colors ${
+              currentFilter === "PROCESSING"
+                ? "bg-[var(--surface)] text-[var(--ink-primary)] font-medium border border-[var(--hairline)]"
+                : "text-[var(--ink-secondary)] hover:text-[var(--ink-primary)]"
+            }`}
+          >
+            Processing
+          </button>
+        </div>
+      </div>
+
+      {/* Right Actions: Filter button, Theme toggle, and ONE solid-ink Deploy/Audit button */}
+      <div className="flex items-center gap-2">
+        {/* Ghost filter button */}
+        <button
+          type="button"
+          onClick={handleRefresh}
+          className="inline-flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-mono border border-[var(--hairline)] rounded-sm bg-transparent text-[var(--ink-secondary)] hover:text-[var(--ink-primary)] hover:border-[var(--ink-primary)] transition-colors"
+          title="Refresh Reviews"
+        >
+          <RefreshCw
+            className={`w-3.5 h-3.5 ${
+              isRefreshing || isLoading ? "animate-spin text-[var(--ink-primary)]" : ""
+            }`}
+          />
+          <span className="hidden sm:inline">SYNC</span>
+        </button>
+
+        {/* Theme Toggle (Paper / Carbon) */}
+        <ThemeToggle />
+
+        {/* ONE Solid-Ink Primary Action Button */}
+        <Link
+          href="/repositories"
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono font-medium rounded-sm bg-[var(--ink-primary)] text-[var(--canvas)] hover:opacity-90 active:scale-[0.98] transition-all"
+        >
+          <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+          <span>CONNECT REPO</span>
+        </Link>
       </div>
     </header>
   );
