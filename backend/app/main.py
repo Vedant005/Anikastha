@@ -65,9 +65,22 @@ app = FastAPI(
     lifespan=lifespan,
 )
 
+# Setup allowed origins for CORS
+cors_origins = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
+if settings.FRONTEND_URL:
+    for url in settings.FRONTEND_URL.split(","):
+        clean_url = url.strip().rstrip("/")
+        if clean_url and clean_url not in cors_origins:
+            cors_origins.append(clean_url)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[settings.FRONTEND_URL, "http://localhost:3000", "http://127.0.0.1:3000"],
+    allow_origins=cors_origins,
+    # Automatically permit all Vercel deployment domains (*.vercel.app)
+    allow_origin_regex=r"^https://.*\.vercel\.app$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
