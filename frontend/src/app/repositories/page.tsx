@@ -6,13 +6,15 @@ import { fetchRepositories } from "@/lib/api";
 import { Repository } from "@/lib/types";
 import { PolicyForm } from "@/components/PolicyForm";
 import { InkGlyph } from "@/components/InkGlyph";
-import { ArrowLeft, GitBranch, RefreshCw, Plus, ExternalLink } from "lucide-react";
+import { ArrowLeft, GitBranch, RefreshCw, Plus, ExternalLink, Menu } from "lucide-react";
+import { useSidebar } from "@/components/SidebarContext";
 
 export default function RepositoriesPage() {
   const [repositories, setRepositories] = useState<Repository[]>([]);
   const [selectedRepo, setSelectedRepo] = useState<Repository | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { toggleSidebar } = useSidebar();
 
   const loadRepos = async () => {
     setIsLoading(true);
@@ -39,6 +41,14 @@ export default function RepositoriesPage() {
       {/* Top Header */}
       <div className="flex flex-wrap items-center justify-between gap-4 pb-3 border-b border-[var(--hairline)]">
         <div className="flex items-center gap-2 text-xs font-mono">
+          <button
+            type="button"
+            onClick={toggleSidebar}
+            className="p-1.5 rounded-sm border border-[var(--hairline)] bg-[var(--surface)] text-[var(--ink-secondary)] hover:text-[var(--ink-primary)] lg:hidden flex-shrink-0"
+            aria-label="Open navigation menu"
+          >
+            <Menu className="w-4 h-4" />
+          </button>
           <Link
             href="/"
             className="text-[var(--ink-secondary)] hover:text-[var(--ink-primary)] transition-colors"
