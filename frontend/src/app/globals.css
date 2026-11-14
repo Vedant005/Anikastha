@@ -1,18 +1,90 @@
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&display=swap');
 @import "tailwindcss";
 
-@layer base {
-  :root {
-    --background: #090d16;
-    --foreground: #f1f5f9;
-    --card: #0f172a;
-    --card-border: #1e293b;
-    --accent: #38bdf8;
-  }
+:root {
+  /* Warm Paper Light Mode */
+  --canvas: #f4f1ea;
+  --surface: #faf8f3;
+  --surface-raised: #ffffff;
+  --surface-subtle: #f0ece3;
+
+  --ink-primary: #141310;
+  --ink-secondary: rgba(20, 19, 16, 0.64);
+  --ink-muted: rgba(20, 19, 16, 0.42);
+  --hairline: rgba(20, 19, 16, 0.14);
+  --hairline-strong: rgba(20, 19, 16, 0.28);
+
+  /* Single Chroma: Signal Red reserved for failures / critical findings */
+  --signal-red: #c8321e;
+  --signal-red-bg: rgba(200, 50, 30, 0.08);
+  --signal-red-border: rgba(200, 50, 30, 0.35);
+
+  --dot-color: rgba(20, 19, 16, 0.08);
+}
+
+.dark {
+  /* Deep Carbon Dark Mode */
+  --canvas: #12110f;
+  --surface: #181714;
+  --surface-raised: #1f1e1a;
+  --surface-subtle: #151412;
+
+  --ink-primary: #ece9e2;
+  --ink-secondary: rgba(236, 233, 226, 0.65);
+  --ink-muted: rgba(236, 233, 226, 0.40);
+  --hairline: rgba(236, 233, 226, 0.12);
+  --hairline-strong: rgba(236, 233, 226, 0.25);
+
+  /* Single Chroma: Signal Red in dark */
+  --signal-red: #e0432e;
+  --signal-red-bg: rgba(224, 67, 46, 0.12);
+  --signal-red-border: rgba(224, 67, 46, 0.4);
+
+  --dot-color: rgba(236, 233, 226, 0.07);
+}
+
+* {
+  border-color: var(--hairline);
 }
 
 body {
-  background-color: var(--background);
-  color: var(--foreground);
-  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  min-height: 100vh;
+  background-color: var(--canvas);
+  color: var(--ink-primary);
+  font-family: 'IBM Plex Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  letter-spacing: -0.01em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+code, kbd, samp, pre, .font-mono {
+  font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
+
+/* Subtle 6px radial dot grain texture for hero card */
+.dot-grain-texture {
+  background-image: radial-gradient(var(--dot-color) 1px, transparent 1px);
+  background-size: 6px 6px;
+}
+
+/* Scrollbar styling for e-ink minimalism */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--canvas);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--hairline-strong);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--ink-secondary);
+}
+
+/* Tabular figures for mono aligned tables */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
 }
