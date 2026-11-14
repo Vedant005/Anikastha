@@ -22,7 +22,8 @@ export function PolicyForm({
     initialPolicy?.auto_request_changes ?? true
   );
   const [prohibitedLicensesText, setProhibitedLicensesText] = useState<string>(
-    initialPolicy?.prohibited_licenses?.join(", ") || "GPL-3.0, AGPL-3.0, SSPL-1.0"
+    initialPolicy?.prohibited_licenses?.join(", ") ||
+      "GPL-3.0, AGPL-3.0, SSPL-1.0"
   );
 
   const [isSaving, setIsSaving] = useState(false);
@@ -57,96 +58,111 @@ export function PolicyForm({
   };
 
   return (
-    <form onSubmit={handleSave} className="space-y-6 bg-slate-900/40 border border-slate-800 rounded-xl p-6">
-      <div>
-        <h3 className="text-base font-semibold text-slate-100">Review Verdict Policy</h3>
-        <p className="text-xs text-slate-400 mt-1">
-          Configure how PR-Sentinel determines review verdicts and blocking rules on GitHub PRs.
+    <form
+      onSubmit={handleSave}
+      className="space-y-6 border border-[var(--hairline)] bg-[var(--surface)] rounded-sm p-5 sm:p-6"
+    >
+      <div className="border-b border-[var(--hairline)] pb-4">
+        <h3 className="text-sm font-semibold tracking-tight text-[var(--ink-primary)]">
+          Repository Review &amp; Verdict Policy
+        </h3>
+        <p className="text-xs text-[var(--ink-secondary)] mt-1 font-mono">
+          Configure how PR-Sentinel evaluates security findings and gates GitHub PR merges.
         </p>
       </div>
 
       {error && (
-        <div className="flex items-center gap-2 p-3 rounded-lg bg-rose-950/40 border border-rose-800 text-rose-300 text-sm">
-          <AlertCircle className="h-4 w-4" />
+        <div className="flex items-center gap-2 p-3 rounded-xs bg-[var(--signal-red-bg)] border border-[var(--signal-red-border)] text-[var(--signal-red)] text-xs font-mono">
+          <AlertCircle className="w-4 h-4 flex-shrink-0" />
           <span>{error}</span>
         </div>
       )}
 
       {saveSuccess && (
-        <div className="flex items-center gap-2 p-3 rounded-lg bg-emerald-950/40 border border-emerald-800 text-emerald-300 text-sm">
-          <Check className="h-4 w-4" />
-          <span>Policy saved successfully!</span>
+        <div className="flex items-center gap-2 p-3 rounded-xs bg-[var(--canvas)] border border-[var(--hairline-strong)] text-[var(--ink-primary)] text-xs font-mono">
+          <Check className="w-4 h-4 flex-shrink-0" />
+          <span>Security policy saved to repository ledger.</span>
         </div>
       )}
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
         <div>
-          <label className="block text-xs font-medium text-slate-300 mb-2">
+          <label className="block text-xs font-mono font-medium text-[var(--ink-secondary)] mb-2">
             Block PR on Minimum Severity
           </label>
           <select
             value={failOnSeverity}
-            onChange={(e) => setFailOnSeverity(e.target.value as SeverityLevel)}
-            className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-cyan-500"
+            onChange={(e) =>
+              setFailOnSeverity(e.target.value as SeverityLevel)
+            }
+            className="w-full bg-[var(--canvas)] border border-[var(--hairline)] rounded-xs px-3 py-2 text-xs font-mono text-[var(--ink-primary)] focus:outline-none focus:border-[var(--ink-primary)]"
           >
             <option value="CRITICAL">Critical only</option>
-            <option value="HIGH">High & Critical (Recommended)</option>
-            <option value="MEDIUM">Medium, High & Critical</option>
+            <option value="HIGH">High &amp; Critical (Recommended)</option>
+            <option value="MEDIUM">Medium, High &amp; Critical</option>
             <option value="LOW">All findings (Low to Critical)</option>
           </select>
         </div>
 
-        <div className="space-y-3">
-          <label className="block text-xs font-medium text-slate-300">Automation Settings</label>
-          <div className="flex items-center gap-3">
+        <div className="space-y-3 font-mono">
+          <label className="block text-xs font-medium text-[var(--ink-secondary)]">
+            Automation Gates
+          </label>
+          <div className="flex items-start gap-2.5">
             <input
               type="checkbox"
               id="autoRequest"
               checked={autoRequestChanges}
               onChange={(e) => setAutoRequestChanges(e.target.checked)}
-              className="rounded bg-slate-950 border-slate-700 text-cyan-600 focus:ring-0"
+              className="mt-0.5 rounded-xs accent-[var(--ink-primary)]"
             />
-            <label htmlFor="autoRequest" className="text-xs text-slate-300 cursor-pointer">
-              Automatically post <code>REQUEST_CHANGES</code> when policy threshold is triggered
+            <label
+              htmlFor="autoRequest"
+              className="text-xs text-[var(--ink-secondary)] cursor-pointer select-none leading-tight"
+            >
+              Automatically post <code className="text-[var(--ink-primary)]">REQUEST_CHANGES</code> when threshold is breached
             </label>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-start gap-2.5">
             <input
               type="checkbox"
               id="blockLicenses"
               checked={blockLicenses}
               onChange={(e) => setBlockLicenses(e.target.checked)}
-              className="rounded bg-slate-950 border-slate-700 text-cyan-600 focus:ring-0"
+              className="mt-0.5 rounded-xs accent-[var(--ink-primary)]"
             />
-            <label htmlFor="blockLicenses" className="text-xs text-slate-300 cursor-pointer">
-              Block pull requests introducing prohibited licenses
+            <label
+              htmlFor="blockLicenses"
+              className="text-xs text-[var(--ink-secondary)] cursor-pointer select-none leading-tight"
+            >
+              Block pull requests introducing prohibited open-source licenses
             </label>
           </div>
         </div>
       </div>
 
       <div>
-        <label className="block text-xs font-medium text-slate-300 mb-2">
-          Prohibited Licenses (comma-separated SPDX identifiers)
+        <label className="block text-xs font-mono font-medium text-[var(--ink-secondary)] mb-2">
+          Prohibited Licenses (comma-separated SPDX IDs)
         </label>
         <input
           type="text"
           value={prohibitedLicensesText}
           onChange={(e) => setProhibitedLicensesText(e.target.value)}
           placeholder="GPL-3.0, AGPL-3.0, SSPL-1.0"
-          className="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-2 text-sm text-slate-100 focus:outline-none focus:border-cyan-500 font-mono"
+          className="w-full bg-[var(--canvas)] border border-[var(--hairline)] rounded-xs px-3 py-2 text-xs font-mono text-[var(--ink-primary)] focus:outline-none focus:border-[var(--ink-primary)]"
         />
       </div>
 
-      <div className="flex justify-end pt-2">
+      <div className="flex justify-end pt-2 border-t border-[var(--hairline)]">
         <button
           type="submit"
           disabled={isSaving}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-white text-sm font-medium transition-colors disabled:opacity-50"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-xs bg-[var(--ink-primary)] text-[var(--canvas)] text-xs font-mono font-medium hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50"
         >
-          <Save className="h-4 w-4" />
-          {isSaving ? "Saving..." : "Save Policy"}
+          <Save className="w-3.5 h-3.5" />
+          {isSaving ? "SAVING POLICY..." : "SAVE POLICY"}
         </button>
       </div>
     </form>

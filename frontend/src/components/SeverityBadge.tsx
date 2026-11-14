@@ -4,32 +4,32 @@ export function SeverityBadge({ severity }: { severity: SeverityLevel }) {
   switch (severity) {
     case "CRITICAL":
       return (
-        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-rose-500/10 text-rose-400 border border-rose-500/30">
+        <span className="inline-flex items-center px-1.5 py-0.5 rounded-xs text-[10px] font-mono font-bold bg-[var(--signal-red-bg)] text-[var(--signal-red)] border border-[var(--signal-red-border)]">
           CRITICAL
         </span>
       );
     case "HIGH":
       return (
-        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-bold bg-orange-500/10 text-orange-400 border border-orange-500/30">
+        <span className="inline-flex items-center px-1.5 py-0.5 rounded-xs text-[10px] font-mono font-bold bg-[var(--canvas)] text-[var(--ink-primary)] border border-[var(--ink-primary)]">
           HIGH
         </span>
       );
     case "MEDIUM":
       return (
-        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-amber-500/10 text-amber-300 border border-amber-500/30">
+        <span className="inline-flex items-center px-1.5 py-0.5 rounded-xs text-[10px] font-mono font-medium bg-[var(--canvas)] text-[var(--ink-secondary)] border border-[var(--hairline-strong)]">
           MEDIUM
         </span>
       );
     case "LOW":
       return (
-        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-500/10 text-blue-400 border border-blue-500/30">
+        <span className="inline-flex items-center px-1.5 py-0.5 rounded-xs text-[10px] font-mono font-normal bg-[var(--canvas)] text-[var(--ink-muted)] border border-[var(--hairline)]">
           LOW
         </span>
       );
     case "INFO":
     default:
       return (
-        <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-slate-500/10 text-slate-400 border border-slate-500/30">
+        <span className="inline-flex items-center px-1.5 py-0.5 rounded-xs text-[10px] font-mono font-normal bg-[var(--surface-subtle)] text-[var(--ink-muted)] border border-[var(--hairline)]">
           INFO
         </span>
       );
