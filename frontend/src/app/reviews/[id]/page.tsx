@@ -17,7 +17,9 @@ import {
   ExternalLink,
   Shield,
   Layers,
+  Menu,
 } from "lucide-react";
+import { useSidebar } from "@/components/SidebarContext";
 
 export default function ReviewDetailPage({
   params,
@@ -32,6 +34,7 @@ export default function ReviewDetailPage({
   const [isLoading, setIsLoading] = useState(true);
   const [isRerunning, setIsRerunning] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const { toggleSidebar } = useSidebar();
 
   // Load initial review data
   useEffect(() => {
@@ -135,6 +138,14 @@ export default function ReviewDetailPage({
       {/* Top Header Bar */}
       <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-[var(--hairline)]">
         <div className="flex items-center gap-2 text-xs font-mono">
+          <button
+            type="button"
+            onClick={toggleSidebar}
+            className="p-1.5 rounded-sm border border-[var(--hairline)] bg-[var(--surface)] text-[var(--ink-secondary)] hover:text-[var(--ink-primary)] lg:hidden flex-shrink-0"
+            aria-label="Open navigation menu"
+          >
+            <Menu className="w-4 h-4" />
+          </button>
           <Link
             href="/"
             className="inline-flex items-center gap-1.5 text-[var(--ink-secondary)] hover:text-[var(--ink-primary)] transition-colors"

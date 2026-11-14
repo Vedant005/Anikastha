@@ -41,7 +41,7 @@ export default function OverviewPage() {
   const failedReview = useMemo(() => {
     return (
       reviews.find(
-        (r) => r.status === "FAILED" || r.verdict === "REQUEST_CHANGES"
+        (r) => r.status === "FAILED" || r.verdict === "REQUEST_CHANGES",
       ) || null
     );
   }, [reviews]);
@@ -52,13 +52,13 @@ export default function OverviewPage() {
     switch (filter) {
       case "REQUEST_CHANGES":
         return reviews.filter(
-          (r) => r.verdict === "REQUEST_CHANGES" || r.status === "FAILED"
+          (r) => r.verdict === "REQUEST_CHANGES" || r.status === "FAILED",
         );
       case "APPROVE":
         return reviews.filter((r) => r.verdict === "APPROVE");
       case "PROCESSING":
         return reviews.filter(
-          (r) => r.status === "PROCESSING" || r.status === "PENDING"
+          (r) => r.status === "PROCESSING" || r.status === "PENDING",
         );
       case "ALL":
       default:
@@ -77,7 +77,7 @@ export default function OverviewPage() {
       />
 
       {/* Main Content Area */}
-      <main className="p-4 sm:p-6 lg:p-8 space-y-6 flex-1 max-w-[1440px] w-full mx-auto">
+      <main className="p-4 sm:p-6 lg:p-8 space-y-6 flex-1 max-w-[1440px] w-full mx-auto flex flex-col justify-between">
         {/* Error Alert if any */}
         {error && (
           <div className="p-3 border border-[var(--signal-red-border)] bg-[var(--signal-red-bg)] text-[var(--signal-red)] rounded-sm text-xs font-mono flex items-center justify-between">
@@ -95,10 +95,7 @@ export default function OverviewPage() {
         )}
 
         {/* 1. CURRENT PRODUCTION / LATEST SECURITY AUDIT HERO CARD */}
-        <HeroCard
-          latestReview={latestReview}
-          repoName={latestRepoName}
-        />
+        <HeroCard latestReview={latestReview} repoName={latestRepoName} />
 
         {/* 2. DENSE HAIRLINE-DIVIDED REVIEWS TABLE */}
         <ReviewsTable
@@ -111,6 +108,7 @@ export default function OverviewPage() {
         <BottomSplit
           failedReview={failedReview}
           reviews={reviews}
+          repositories={repositories}
         />
       </main>
     </div>
