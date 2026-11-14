@@ -4,24 +4,23 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
-  ShieldAlert,
   GitPullRequest,
   FolderGit2,
   Sliders,
   Terminal,
-  Activity,
   Search,
   ChevronDown,
-  Layers,
-  Sparkles,
-  ExternalLink,
+  X,
 } from "lucide-react";
 import { InkGlyph } from "./InkGlyph";
 import { useReviewStore } from "@/store/useReviewStore";
+import { useSidebar } from "./SidebarContext";
 
 export function Sidebar() {
   const pathname = usePathname();
-  const { repositories, selectedRepoId, setSelectedRepoId } = useReviewStore();
+  const { repositories, reviews, selectedRepoId, setSelectedRepoId } =
+    useReviewStore();
+  const { isOpen, closeSidebar } = useSidebar();
   const [searchQuery, setSearchQuery] = useState("");
 
   const navItems = [
@@ -52,30 +51,46 @@ export function Sidebar() {
     },
   ];
 
-  return (
-    <aside className="w-full lg:w-60 lg:min-w-[240px] lg:max-w-[240px] flex-shrink-0 flex flex-col justify-between bg-[var(--surface)] border-r border-[var(--hairline)] min-h-screen text-[var(--ink-primary)] select-none">
-      {/* Top Section */}
-      <div className="flex flex-col">
+  // Dynamic quota usage
+  const totalScans = reviews ? reviews.length : 0;
+  const maxQuota = 600;
+  const quotaPercent = Math.min(100, Math.round((totalScans / maxQuota) * 100));
+
+  const sidebarContent = (
+    <div className="flex flex-col h-full w-full justify-between select-none">
+      {/* Scrollable Top & Middle Section */}
+      <div className="flex-1 overflow-y-auto min-h-0 flex flex-col">
         {/* Workspace Switcher */}
-        <div className="p-3.5 border-b border-[var(--hairline)]">
+        <div className="p-3.5 border-b border-[var(--hairline)] flex-shrink-0">
           <div className="flex items-center justify-between p-1.5 rounded-sm hover:bg-[var(--surface-subtle)] transition-colors cursor-pointer">
             <div className="flex items-center gap-2.5 min-w-0">
               <div className="w-6 h-6 rounded-sm bg-[var(--ink-primary)] text-[var(--canvas)] flex items-center justify-center font-mono font-bold text-xs flex-shrink-0">
-                PS
+                A
               </div>
               <div className="min-w-0 flex flex-col">
                 <span className="text-xs font-semibold tracking-tight truncate leading-tight">
-                  PR-Sentinel
+                  ANIKASTHA
                 </span>
                 <span className="text-[10px] font-mono text-[var(--ink-muted)] truncate">
-                  workspace / sec-ops
+                  workspace
                 </span>
               </div>
             </div>
-            <ChevronDown className="w-3.5 h-3.5 text-[var(--ink-muted)] flex-shrink-0 ml-1" />
+            <div className="flex items-center gap-1">
+              <ChevronDown className="w-3.5 h-3.5 text-[var(--ink-muted)] flex-shrink-0" />
+              {/* Mobile Close Button */}
+              <button
+                type="button"
+                onClick={closeSidebar}
+                className="p-1 rounded-sm text-[var(--ink-muted)] hover:text-[var(--ink-primary)] lg:hidden ml-1"
+                aria-label="Close sidebar"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
           </div>
 
-          {/* Quick Cmd-K Search */}
+          {/* Quick Search */}
           <div className="mt-3 relative">
             <Search className="w-3.5 h-3.5 text-[var(--ink-muted)] absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
@@ -92,7 +107,7 @@ export function Sidebar() {
         </div>
 
         {/* Navigation Group */}
-        <div className="py-2.5">
+        <div className="py-2.5 flex-shrink-0">
           <div className="px-3.5 pb-1.5 text-[10px] font-mono font-semibold tracking-wider text-[var(--ink-muted)] uppercase">
             Platform
           </div>
@@ -103,6 +118,7 @@ export function Sidebar() {
                 <Link
                   key={item.label}
                   href={item.href}
+                  onClick={() => closeSidebar()}
                   className={`group relative flex items-center justify-between px-3.5 py-1.5 text-xs transition-colors ${
                     item.active
                       ? "text-[var(--ink-primary)] font-medium bg-[var(--canvas)]"
@@ -142,7 +158,10 @@ export function Sidebar() {
           <div className="flex flex-col space-y-0.5">
             {/* All Filter Option */}
             <button
-              onClick={() => setSelectedRepoId(null)}
+              onClick={() => {
+                setSelectedRepoId(null);
+                closeSidebar();
+              }}
               className={`w-full text-left px-3.5 py-1.5 text-xs flex items-center justify-between transition-colors ${
                 selectedRepoId === null
                   ? "bg-[var(--canvas)] text-[var(--ink-primary)] font-medium"
@@ -155,13 +174,16 @@ export function Sidebar() {
               </div>
             </button>
 
-            {repositories.slice(0, 6).map((repo) => {
+            {repositories.slice(0, 10).map((repo) => {
               const isSelected = selectedRepoId === repo.id;
               const shortName = repo.full_name.split("/")[1] || repo.full_name;
               return (
                 <button
                   key={repo.id}
-                  onClick={() => setSelectedRepoId(repo.id)}
+                  onClick={() => {
+                    setSelectedRepoId(repo.id);
+                    closeSidebar();
+                  }}
                   className={`w-full text-left px-3.5 py-1.5 text-xs flex items-center justify-between transition-colors ${
                     isSelected
                       ? "bg-[var(--canvas)] text-[var(--ink-primary)] font-medium"
@@ -191,53 +213,73 @@ export function Sidebar() {
         </div>
       </div>
 
-      {/* Bottom Section */}
-      <div className="flex flex-col border-t border-[var(--hairline)]">
-        {/* Pinned Scans / Build-Minutes Usage Meter */}
-        <div className="p-3.5 bg-[var(--surface-subtle)] border-b border-[var(--hairline)]">
+      <div className="sticky bottom-0 w-full mt-auto flex-shrink-0 flex flex-col border-t border-[var(--hairline)] bg-[var(--surface)] z-10">
+        {/* <div className="p-3.5 bg-[var(--surface-subtle)] border-b border-[var(--hairline)] w-full">
           <div className="flex items-center justify-between text-[11px] font-mono">
             <span className="text-[var(--ink-secondary)]">Review Quota</span>
-            <span className="font-medium text-[var(--ink-primary)]">
-              412 / 600
+            <span className="font-medium text-[var(--ink-primary)] tabular-nums">
+              {totalScans} / {maxQuota}
             </span>
           </div>
 
-          {/* Stepped ink meter */}
+            
           <div className="mt-2 w-full h-1.5 bg-[var(--canvas)] border border-[var(--hairline)] rounded-xs overflow-hidden">
             <div
-              className="h-full bg-[var(--ink-primary)]"
-              style={{ width: "68.6%" }}
+              className="h-full bg-[var(--ink-primary)] transition-all duration-300"
+              style={{ width: `${Math.max(2, quotaPercent)}%` }}
             />
           </div>
 
           <div className="mt-1.5 flex items-center justify-between text-[10px] font-mono text-[var(--ink-muted)]">
-            <span>68% allocated</span>
+            <span>{quotaPercent}% allocated</span>
             <span>Resets in 18d</span>
           </div>
-        </div>
+        </div> */}
 
         {/* User Profile Row */}
-        <div className="p-3 flex items-center justify-between">
+        <div className="p-3 flex items-center justify-between w-full">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-7 h-7 rounded-sm border border-[var(--hairline)] bg-[var(--canvas)] flex items-center justify-center font-mono font-semibold text-xs text-[var(--ink-primary)]">
+            <div className="w-7 h-7 rounded-sm border border-[var(--hairline)] bg-[var(--canvas)] flex items-center justify-center font-mono font-semibold text-xs text-[var(--ink-primary)] flex-shrink-0">
               VD
             </div>
             <div className="flex flex-col min-w-0">
               <span className="text-xs font-medium truncate text-[var(--ink-primary)]">
                 vedant
               </span>
-              <span className="text-[10px] font-mono text-[var(--ink-muted)] truncate">
+              {/* <span className="text-[10px] font-mono text-[var(--ink-muted)] truncate">
                 sec-engineer &bull; pro
-              </span>
+              </span> */}
             </div>
           </div>
 
           <span
-            className="w-2 h-2 rounded-full bg-[var(--ink-primary)]"
+            className="w-2 h-2 rounded-full bg-[var(--ink-primary)] flex-shrink-0"
             title="Agent Daemon Active"
           />
         </div>
       </div>
-    </aside>
+    </div>
+  );
+
+  return (
+    <>
+      <aside className="hidden lg:flex w-60 min-w-[240px] max-w-[240px] flex-shrink-0 flex-col justify-between bg-[var(--surface)] border-r border-[var(--hairline)] h-screen sticky top-0 text-[var(--ink-primary)] z-30">
+        {sidebarContent}
+      </aside>
+
+      {isOpen && (
+        <div className="lg:hidden">
+          <div
+            onClick={closeSidebar}
+            className="fixed inset-0 bg-black/40 backdrop-blur-xs z-40 transition-opacity animate-in fade-in"
+            aria-hidden="true"
+          />
+
+          <aside className="fixed inset-y-0 left-0 z-50 w-64 max-w-[85vw] bg-[var(--surface)] border-r border-[var(--hairline)] flex flex-col justify-between shadow-2xl animate-in slide-in-from-left duration-200">
+            {sidebarContent}
+          </aside>
+        </div>
+      )}
+    </>
   );
 }
