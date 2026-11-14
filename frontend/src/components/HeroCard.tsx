@@ -4,7 +4,14 @@ import React from "react";
 import Link from "next/link";
 import { ReviewRun } from "@/lib/types";
 import { InkGlyph } from "./InkGlyph";
-import { ArrowUpRight, GitCommit, GitPullRequest, Clock, ShieldCheck, AlertCircle } from "lucide-react";
+import {
+  ArrowUpRight,
+  GitCommit,
+  GitPullRequest,
+  Clock,
+  ShieldCheck,
+  AlertCircle,
+} from "lucide-react";
 
 interface HeroCardProps {
   latestReview: ReviewRun | null;
@@ -23,7 +30,8 @@ export function HeroCard({ latestReview, repoName }: HeroCardProps) {
             No Pull Request Reviews Yet
           </div>
           <p className="text-[11px] text-[var(--ink-muted)] mt-1 font-mono max-w-md mx-auto">
-            Connect a GitHub repository or open a Pull Request. PR-Sentinel will automatically trigger the multi-agent security pipeline.
+            Connect a GitHub repository or open a Pull Request. PR-Sentinel will
+            automatically trigger the multi-agent security pipeline.
           </p>
         </div>
       </div>
@@ -53,7 +61,6 @@ export function HeroCard({ latestReview, repoName }: HeroCardProps) {
 
   return (
     <section className="relative border border-[var(--hairline)] bg-[var(--surface)] p-5 sm:p-6 rounded-sm dot-grain-texture overflow-hidden">
-      {/* Top Meta Header */}
       <div className="flex flex-wrap items-start justify-between gap-4 pb-4 border-b border-[var(--hairline)]">
         <div className="flex flex-col gap-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
@@ -78,14 +85,17 @@ export function HeroCard({ latestReview, repoName }: HeroCardProps) {
           </h2>
         </div>
 
-        {/* Right Status Badge & Link */}
         <div className="flex items-center gap-3">
           <div className="text-right font-mono">
             <div className="text-[11px] font-semibold tracking-wider">
               {latestReview.verdict === "APPROVE" ? (
-                <span className="text-[var(--ink-primary)]">VERDICT: APPROVED</span>
+                <span className="text-[var(--ink-primary)]">
+                  VERDICT: APPROVED
+                </span>
               ) : latestReview.verdict === "REQUEST_CHANGES" ? (
-                <span className="text-[var(--signal-red)]">VERDICT: REQUEST CHANGES</span>
+                <span className="text-[var(--signal-red)]">
+                  VERDICT: REQUEST CHANGES
+                </span>
               ) : (
                 <span className="text-[var(--ink-secondary)]">
                   STATUS: {latestReview.status}
@@ -108,35 +118,52 @@ export function HeroCard({ latestReview, repoName }: HeroCardProps) {
         </div>
       </div>
 
-      {/* PR Summary Bar */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 py-3 border-b border-[var(--hairline)] text-xs font-mono">
         <div>
-          <div className="text-[10px] text-[var(--ink-muted)] uppercase">Author</div>
+          <div className="text-[10px] text-[var(--ink-muted)] uppercase">
+            Author
+          </div>
           <div className="font-medium text-[var(--ink-primary)] truncate mt-0.5">
             @{latestReview.pr_author || "developer"}
           </div>
         </div>
         <div>
-          <div className="text-[10px] text-[var(--ink-muted)] uppercase">Commit SHA</div>
+          <div className="text-[10px] text-[var(--ink-muted)] uppercase">
+            Commit SHA
+          </div>
           <div className="font-medium text-[var(--ink-primary)] flex items-center gap-1 mt-0.5">
             <GitCommit className="w-3.5 h-3.5 opacity-60" />
-            <span className="truncate">{latestReview.commit_sha?.slice(0, 7) || "head"}</span>
+            <span className="truncate">
+              {latestReview.commit_sha?.slice(0, 7) || "head"}
+            </span>
           </div>
         </div>
         <div>
-          <div className="text-[10px] text-[var(--ink-muted)] uppercase">Findings</div>
+          <div className="text-[10px] text-[var(--ink-muted)] uppercase">
+            Findings
+          </div>
           <div className="font-medium text-[var(--ink-primary)] mt-0.5 flex items-center gap-2">
-            <span className={latestReview.critical_count > 0 ? "text-[var(--signal-red)] font-semibold" : ""}>
+            <span
+              className={
+                latestReview.critical_count > 0
+                  ? "text-[var(--signal-red)] font-semibold"
+                  : ""
+              }
+            >
               {latestReview.critical_count} Crit
             </span>
             <span className="text-[var(--ink-muted)]">/</span>
             <span>{latestReview.high_count} High</span>
             <span className="text-[var(--ink-muted)]">/</span>
-            <span>{latestReview.medium_count + latestReview.low_count} Med/Low</span>
+            <span>
+              {latestReview.medium_count + latestReview.low_count} Med/Low
+            </span>
           </div>
         </div>
         <div>
-          <div className="text-[10px] text-[var(--ink-muted)] uppercase">Verified Gate</div>
+          <div className="text-[10px] text-[var(--ink-muted)] uppercase">
+            Verified Gate
+          </div>
           <div className="font-medium text-[var(--ink-primary)] mt-0.5">
             {latestReview.findings?.filter((f) => f.is_verified).length || 0} /{" "}
             {latestReview.total_findings || 0} passed
@@ -144,7 +171,6 @@ export function HeroCard({ latestReview, repoName }: HeroCardProps) {
         </div>
       </div>
 
-      {/* 4-Stage Pipeline Strip */}
       <div className="pt-4">
         <div className="flex items-center justify-between mb-2">
           <span className="text-[10px] font-mono font-semibold tracking-wider text-[var(--ink-muted)] uppercase">
@@ -198,13 +224,17 @@ export function HeroCard({ latestReview, repoName }: HeroCardProps) {
               >
                 <div
                   className={`w-2.5 h-2.5 rounded-full ${
-                    isFailed ? "bg-[var(--signal-red)]" : "bg-[var(--ink-primary)]"
+                    isFailed
+                      ? "bg-[var(--signal-red)]"
+                      : "bg-[var(--ink-primary)]"
                   }`}
                 />
               </div>
               <div
                 className={`mt-1.5 text-[11px] font-mono font-medium ${
-                  isFailed ? "text-[var(--signal-red)]" : "text-[var(--ink-primary)]"
+                  isFailed
+                    ? "text-[var(--signal-red)]"
+                    : "text-[var(--ink-primary)]"
                 }`}
               >
                 LANGGRAPH
