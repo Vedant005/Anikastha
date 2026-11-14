@@ -2,9 +2,10 @@
 
 import React from "react";
 import Link from "next/link";
-import { SlidersHorizontal, Plus, RefreshCw } from "lucide-react";
+import { Plus, RefreshCw, Menu } from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";
 import { useReviewStore } from "@/store/useReviewStore";
+import { useSidebar } from "./SidebarContext";
 
 export type FilterStatus = "ALL" | "REQUEST_CHANGES" | "APPROVE" | "PROCESSING";
 
@@ -22,6 +23,7 @@ export function Header({
   isRefreshing = false,
 }: HeaderProps) {
   const { loadInitialData, isLoading } = useReviewStore();
+  const { toggleSidebar } = useSidebar();
 
   const handleRefresh = () => {
     if (onRefresh) {
@@ -32,9 +34,20 @@ export function Header({
   };
 
   return (
-    <header className="sticky top-0 z-30 bg-[var(--surface)] border-b border-[var(--hairline)] px-4 sm:px-6 py-3 flex flex-wrap items-center justify-between gap-3">
-      {/* Breadcrumb / Section Header */}
+    <header className="sticky top-0 z-20 bg-[var(--surface)] border-b border-[var(--hairline)] px-3 sm:px-6 py-2.5 flex flex-wrap items-center justify-between gap-3">
+      {/* Left: Mobile Menu Button + Breadcrumb */}
       <div className="flex items-center gap-2 text-xs font-mono">
+        {/* Mobile Hamburger Drawer Trigger */}
+        <button
+          type="button"
+          onClick={toggleSidebar}
+          className="p-1.5 rounded-sm border border-[var(--hairline)] bg-[var(--canvas)] text-[var(--ink-secondary)] hover:text-[var(--ink-primary)] hover:border-[var(--ink-primary)] transition-colors lg:hidden flex-shrink-0"
+          aria-label="Open navigation menu"
+          title="Open menu"
+        >
+          <Menu className="w-4 h-4" />
+        </button>
+
         <Link
           href="/"
           className="text-[var(--ink-secondary)] hover:text-[var(--ink-primary)] transition-colors"
@@ -42,20 +55,22 @@ export function Header({
           workspace
         </Link>
         <span className="text-[var(--ink-muted)]">/</span>
-        <span className="text-[var(--ink-secondary)]">pr-sentinel</span>
-        <span className="text-[var(--ink-muted)]">/</span>
+        <span className="text-[var(--ink-secondary)] hidden sm:inline">
+          pr-sentinel
+        </span>
+        <span className="text-[var(--ink-muted)] hidden sm:inline">/</span>
         <span className="text-[var(--ink-primary)] font-medium">reviews</span>
       </div>
 
       {/* Center Controls: Segmented Filter Controls */}
-      <div className="flex items-center gap-2">
-        <div className="inline-flex p-0.5 border border-[var(--hairline)] bg-[var(--canvas)] rounded-sm text-[11px] font-mono">
+      <div className="order-3 sm:order-2 w-full sm:w-auto overflow-x-auto flex justify-start sm:justify-center py-1 sm:py-0">
+        <div className="inline-flex p-0.5 border border-[var(--hairline)] bg-[var(--canvas)] rounded-sm text-[11px] font-mono flex-shrink-0">
           <button
             type="button"
             onClick={() => onFilterChange && onFilterChange("ALL")}
             className={`px-2.5 py-1 rounded-xs transition-colors ${
               currentFilter === "ALL"
-                ? "bg-[var(--surface)] text-[var(--ink-primary)] font-medium shadow-none border border-[var(--hairline)]"
+                ? "bg-[var(--surface)] text-[var(--ink-primary)] font-medium border border-[var(--hairline)]"
                 : "text-[var(--ink-secondary)] hover:text-[var(--ink-primary)]"
             }`}
           >
@@ -98,9 +113,9 @@ export function Header({
         </div>
       </div>
 
-      {/* Right Actions: Filter button, Theme toggle, and ONE solid-ink Deploy/Audit button */}
-      <div className="flex items-center gap-2">
-        {/* Ghost filter button */}
+      {/* Right Actions: Sync, Theme toggle, and ONE solid-ink Deploy/Connect button */}
+      <div className="order-2 sm:order-3 flex items-center gap-2 flex-shrink-0">
+        {/* Ghost sync button */}
         <button
           type="button"
           onClick={handleRefresh}
@@ -112,7 +127,7 @@ export function Header({
               isRefreshing || isLoading ? "animate-spin text-[var(--ink-primary)]" : ""
             }`}
           />
-          <span className="hidden sm:inline">SYNC</span>
+          <span className="hidden md:inline">SYNC</span>
         </button>
 
         {/* Theme Toggle (Paper / Carbon) */}
@@ -121,10 +136,11 @@ export function Header({
         {/* ONE Solid-Ink Primary Action Button */}
         <Link
           href="/repositories"
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono font-medium rounded-sm bg-[var(--ink-primary)] text-[var(--canvas)] hover:opacity-90 active:scale-[0.98] transition-all"
+          className="inline-flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 text-xs font-mono font-medium rounded-sm bg-[var(--ink-primary)] text-[var(--canvas)] hover:opacity-90 active:scale-[0.98] transition-all"
         >
           <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
-          <span>CONNECT REPO</span>
+          <span className="hidden sm:inline">CONNECT REPO</span>
+          <span className="sm:hidden">REPO</span>
         </Link>
       </div>
     </header>
