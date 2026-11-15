@@ -6,6 +6,9 @@ Anikastha is an autonomous, context-aware security code reviewer that intercepts
 
 ---
 
+<img width="1913" height="874" alt="image" src="https://github.com/user-attachments/assets/538617b3-afa4-425a-b67d-407bdc4c9f03" />
+
+
 ## Key Capabilities
 
 - **Sub-Second Webhook Ingestion**: Verifies GitHub HMAC-SHA256 signatures in constant time and offloads review jobs to an asynchronous ARQ/Redis queue in <500ms.
