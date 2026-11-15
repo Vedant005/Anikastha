@@ -1,0 +1,6 @@
+# Controlled test dependencies to verify PR-Sentinel OSV Vulnerability Scanner
+# CVE-2021-33503: Catastrophic backtracking in URL authority parser
+urllib3==1.26.4
+
+# CVE-2018-18074: HTTP Authorization header leak on cross-domain redirect
+requests==2.19.1
