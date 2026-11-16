@@ -1,14 +1,16 @@
 import hashlib
 import uuid
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.api.deps import get_db
+from app.api.deps import get_current_user_optional, get_db
 from app.models.policy import Policy
 from app.models.repository import Repository
+from app.models.user import User
 from app.schemas.policy import PolicyRead, PolicyUpdate
 from app.schemas.repository import RepositoryRead
 
@@ -23,12 +25,20 @@ router = APIRouter(prefix="/repositories", tags=["Repositories"])
 async def list_repositories(
     request: Request,
     response: Response,
+    current_user: Annotated[User | None, Depends(get_current_user_optional)] = None,
     db: AsyncSession = Depends(get_db),
 ):
-    """List all connected GitHub repositories with ETag caching support."""
-    result = await db.execute(
-        select(Repository).options(selectinload(Repository.policy)).order_by(Repository.full_name)
-    )
+    """List connected GitHub repositories with multi-tenant scoping and ETag caching."""
+    query = select(Repository).options(selectinload(Repository.policy))
+
+    # Multi-tenant scoping: if user is authenticated, isolate by their installation IDs
+    if current_user:
+        user_inst_ids = [inst.installation_id for inst in current_user.installations]
+        if not user_inst_ids:
+            return []
+        query = query.where(Repository.installation_id.in_(user_inst_ids))
+
+    result = await db.execute(query.order_by(Repository.full_name))
     repos = list(result.scalars().all())
 
     # Generate deterministic ETag based on IDs, update timestamps, and active flags
@@ -64,9 +74,20 @@ async def list_repositories(
 )
 async def get_repository_policy(
     repo_id: uuid.UUID,
+    current_user: Annotated[User | None, Depends(get_current_user_optional)] = None,
     db: AsyncSession = Depends(get_db),
 ) -> Policy:
     """Retrieve security and licensing policy for a repository."""
+    if current_user:
+        repo_result = await db.execute(select(Repository).where(Repository.id == repo_id))
+        repo = repo_result.scalar_one_or_none()
+        user_inst_ids = [inst.installation_id for inst in current_user.installations]
+        if not repo or repo.installation_id not in user_inst_ids:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Policy for repository '{repo_id}' not found.",
+            )
+
     result = await db.execute(select(Policy).where(Policy.repository_id == repo_id))
     policy = result.scalar_one_or_none()
     if not policy:
@@ -85,9 +106,20 @@ async def get_repository_policy(
 async def update_repository_policy(
     repo_id: uuid.UUID,
     policy_update: PolicyUpdate,
+    current_user: Annotated[User | None, Depends(get_current_user_optional)] = None,
     db: AsyncSession = Depends(get_db),
 ) -> Policy:
     """Update security severity threshold and license rules for a repository."""
+    if current_user:
+        repo_result = await db.execute(select(Repository).where(Repository.id == repo_id))
+        repo = repo_result.scalar_one_or_none()
+        user_inst_ids = [inst.installation_id for inst in current_user.installations]
+        if not repo or repo.installation_id not in user_inst_ids:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Repository '{repo_id}' not found.",
+            )
+
     result = await db.execute(select(Policy).where(Policy.repository_id == repo_id))
     policy = result.scalar_one_or_none()
     if not policy:
