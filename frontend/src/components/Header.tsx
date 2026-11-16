@@ -4,6 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { Plus, RefreshCw, Menu } from "lucide-react";
 import { ThemeToggle } from "./ThemeToggle";
+import { UserAuthControl } from "./UserAuthControl";
 import { useReviewStore } from "@/store/useReviewStore";
 import { useSidebar } from "./SidebarContext";
 
@@ -132,6 +133,9 @@ export function Header({
 
         {/* Theme Toggle (Paper / Carbon) */}
         <ThemeToggle />
+
+        {/* User Identity & Authentication Control */}
+        <UserAuthControl />
 
         {/* ONE Solid-Ink Primary Action Button */}
         <Link
