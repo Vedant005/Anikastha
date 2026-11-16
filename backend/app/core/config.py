@@ -46,6 +46,13 @@ class Settings(BaseSettings):
     GITHUB_APP_PRIVATE_KEY_BASE64: str = ""
     GITHUB_WEBHOOK_SECRET: str = ""
 
+    # GitHub OAuth & Authentication
+    GITHUB_CLIENT_ID: str = ""
+    GITHUB_CLIENT_SECRET: str = ""
+    JWT_SECRET: str = "dev-insecure-jwt-secret-pr-sentinel-2026-superkey"
+    JWT_ALGORITHM: str = "HS256"
+    JWT_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
+
     # LLM Settings
     LLM_PROVIDER: Literal[
         "gemini", "openai", "anthropic", "groq", "openrouter", "huggingface", "custom"
