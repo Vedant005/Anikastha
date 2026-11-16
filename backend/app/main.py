@@ -70,6 +70,8 @@ app = FastAPI(
 cors_origins = [
     "http://localhost:3000",
     "http://127.0.0.1:3000",
+    "http://localhost:3001",
+    "http://127.0.0.1:3001",
 ]
 if settings.FRONTEND_URL:
     for url in settings.FRONTEND_URL.split(","):
@@ -80,8 +82,8 @@ if settings.FRONTEND_URL:
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
-    # Automatically permit all Vercel deployment domains (*.vercel.app)
-    allow_origin_regex=r"^https://.*\.vercel\.app$",
+    # Automatically permit all local dev ports (3000, 3001, etc.) and Vercel domains
+    allow_origin_regex=r"^(https://.*\.vercel\.app|http://(localhost|127\.0\.0\.1):\d+)$",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

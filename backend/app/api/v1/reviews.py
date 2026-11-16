@@ -33,19 +33,23 @@ async def list_reviews(
     db: AsyncSession = Depends(get_db),
 ) -> list[ReviewRun]:
     """Retrieve paginated list of recent review runs with user installation isolation."""
+    # Unauthenticated requests return empty list
+    if not current_user:
+        return []
+
+    user_inst_ids = [inst.installation_id for inst in current_user.installations]
+    if not user_inst_ids:
+        return []
+
     query = (
         select(ReviewRun)
         .options(selectinload(ReviewRun.findings))
+        .join(ReviewRun.repository)
+        .where(Repository.installation_id.in_(user_inst_ids))
         .order_by(ReviewRun.created_at.desc())
         .limit(limit)
         .offset(offset)
     )
-
-    if current_user:
-        user_inst_ids = [inst.installation_id for inst in current_user.installations]
-        if not user_inst_ids:
-            return []
-        query = query.join(ReviewRun.repository).where(Repository.installation_id.in_(user_inst_ids))
 
     if repo_id:
         query = query.where(ReviewRun.repository_id == repo_id)
@@ -65,6 +69,12 @@ async def get_review(
     db: AsyncSession = Depends(get_db),
 ) -> ReviewRun:
     """Retrieve detailed information and findings for a specific review run."""
+    if not current_user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required to view review details.",
+        )
+
     result = await db.execute(
         select(ReviewRun)
         .options(selectinload(ReviewRun.findings), selectinload(ReviewRun.repository))
@@ -77,13 +87,12 @@ async def get_review(
             detail=f"Review run '{review_id}' not found.",
         )
 
-    if current_user and review_run.repository:
-        user_inst_ids = [inst.installation_id for inst in current_user.installations]
-        if review_run.repository.installation_id not in user_inst_ids:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Review run '{review_id}' not found.",
-            )
+    user_inst_ids = [inst.installation_id for inst in current_user.installations]
+    if not review_run.repository or review_run.repository.installation_id not in user_inst_ids:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Review run '{review_id}' not found.",
+        )
 
     return review_run
 
@@ -100,6 +109,12 @@ async def rerun_review(
     arq_pool: ArqRedis = Depends(get_arq_pool),
 ):
     """Manually trigger a re-run of an existing PR review."""
+    if not current_user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required to trigger review re-run.",
+        )
+
     result = await db.execute(
         select(ReviewRun).options(selectinload(ReviewRun.repository)).where(ReviewRun.id == review_id)
     )
@@ -110,13 +125,12 @@ async def rerun_review(
             detail=f"Review run '{review_id}' not found.",
         )
 
-    if current_user and review_run.repository:
-        user_inst_ids = [inst.installation_id for inst in current_user.installations]
-        if review_run.repository.installation_id not in user_inst_ids:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Review run '{review_id}' not found.",
-            )
+    user_inst_ids = [inst.installation_id for inst in current_user.installations]
+    if not review_run.repository or review_run.repository.installation_id not in user_inst_ids:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Review run '{review_id}' not found.",
+        )
 
     review_run.status = "PENDING"
     review_run.error_message = None

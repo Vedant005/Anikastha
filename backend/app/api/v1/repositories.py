@@ -29,16 +29,22 @@ async def list_repositories(
     db: AsyncSession = Depends(get_db),
 ):
     """List connected GitHub repositories with multi-tenant scoping and ETag caching."""
-    query = select(Repository).options(selectinload(Repository.policy))
+    # Unauthenticated requests have no tenant access -> return empty list
+    if not current_user:
+        return []
 
-    # Multi-tenant scoping: if user is authenticated, isolate by their installation IDs
-    if current_user:
-        user_inst_ids = [inst.installation_id for inst in current_user.installations]
-        if not user_inst_ids:
-            return []
-        query = query.where(Repository.installation_id.in_(user_inst_ids))
+    user_inst_ids = [inst.installation_id for inst in current_user.installations]
+    if not user_inst_ids:
+        return []
 
-    result = await db.execute(query.order_by(Repository.full_name))
+    query = (
+        select(Repository)
+        .options(selectinload(Repository.policy))
+        .where(Repository.installation_id.in_(user_inst_ids))
+        .order_by(Repository.full_name)
+    )
+
+    result = await db.execute(query)
     repos = list(result.scalars().all())
 
     # Generate deterministic ETag based on IDs, update timestamps, and active flags
@@ -78,15 +84,20 @@ async def get_repository_policy(
     db: AsyncSession = Depends(get_db),
 ) -> Policy:
     """Retrieve security and licensing policy for a repository."""
-    if current_user:
-        repo_result = await db.execute(select(Repository).where(Repository.id == repo_id))
-        repo = repo_result.scalar_one_or_none()
-        user_inst_ids = [inst.installation_id for inst in current_user.installations]
-        if not repo or repo.installation_id not in user_inst_ids:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Policy for repository '{repo_id}' not found.",
-            )
+    if not current_user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required to view repository policy.",
+        )
+
+    repo_result = await db.execute(select(Repository).where(Repository.id == repo_id))
+    repo = repo_result.scalar_one_or_none()
+    user_inst_ids = [inst.installation_id for inst in current_user.installations]
+    if not repo or repo.installation_id not in user_inst_ids:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Policy for repository '{repo_id}' not found.",
+        )
 
     result = await db.execute(select(Policy).where(Policy.repository_id == repo_id))
     policy = result.scalar_one_or_none()
@@ -110,15 +121,20 @@ async def update_repository_policy(
     db: AsyncSession = Depends(get_db),
 ) -> Policy:
     """Update security severity threshold and license rules for a repository."""
-    if current_user:
-        repo_result = await db.execute(select(Repository).where(Repository.id == repo_id))
-        repo = repo_result.scalar_one_or_none()
-        user_inst_ids = [inst.installation_id for inst in current_user.installations]
-        if not repo or repo.installation_id not in user_inst_ids:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail=f"Repository '{repo_id}' not found.",
-            )
+    if not current_user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication required to update repository policy.",
+        )
+
+    repo_result = await db.execute(select(Repository).where(Repository.id == repo_id))
+    repo = repo_result.scalar_one_or_none()
+    user_inst_ids = [inst.installation_id for inst in current_user.installations]
+    if not repo or repo.installation_id not in user_inst_ids:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Repository '{repo_id}' not found.",
+        )
 
     result = await db.execute(select(Policy).where(Policy.repository_id == repo_id))
     policy = result.scalar_one_or_none()
