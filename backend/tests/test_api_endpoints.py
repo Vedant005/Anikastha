@@ -31,8 +31,20 @@ async def test_repositories_and_policy_endpoints(client: AsyncClient, db_session
     db_session.add(policy)
     await db_session.commit()
 
-    # 2. List repositories
-    res = await client.get("/api/v1/repositories")
+    # 1b. Dev login to obtain authorized session for installation 98765
+    res_login = await client.post(
+        "/api/v1/auth/dev-login",
+        json={"username": "test-admin", "github_user_id": 999123, "installation_ids": [98765]},
+    )
+    headers = {"Authorization": f"Bearer {res_login.json()['access_token']}"}
+
+    # 2. List repositories (unauthenticated request gets empty list)
+    res_anon = await client.get("/api/v1/repositories")
+    assert res_anon.status_code == 200
+    assert res_anon.json() == []
+
+    # List repositories (authenticated)
+    res = await client.get("/api/v1/repositories", headers=headers)
     assert res.status_code == 200
     assert "etag" in res.headers
     etag = res.headers["etag"]
@@ -41,11 +53,14 @@ async def test_repositories_and_policy_endpoints(client: AsyncClient, db_session
     assert any(r["full_name"] == "test-org/sentinel-demo" for r in repos)
 
     # Test conditional GET with matching ETag -> 304 Not Modified
-    res_cached = await client.get("/api/v1/repositories", headers={"if-none-match": etag})
+    res_cached = await client.get(
+        "/api/v1/repositories",
+        headers={"if-none-match": etag, **headers},
+    )
     assert res_cached.status_code == 304
 
     # 3. Get repository policy
-    res_pol = await client.get(f"/api/v1/repositories/{repo.id}/policy")
+    res_pol = await client.get(f"/api/v1/repositories/{repo.id}/policy", headers=headers)
     assert res_pol.status_code == 200
     pol_data = res_pol.json()
     assert pol_data["fail_on_severity"] == "HIGH"
@@ -55,6 +70,7 @@ async def test_repositories_and_policy_endpoints(client: AsyncClient, db_session
     res_update = await client.put(
         f"/api/v1/repositories/{repo.id}/policy",
         json={"fail_on_severity": "CRITICAL", "auto_request_changes": False},
+        headers=headers,
     )
     assert res_update.status_code == 200
     updated_data = res_update.json()
@@ -63,7 +79,7 @@ async def test_repositories_and_policy_endpoints(client: AsyncClient, db_session
 
     # 5. Non-existent policy returns 404
     non_existent_id = uuid.uuid4()
-    res_404 = await client.get(f"/api/v1/repositories/{non_existent_id}/policy")
+    res_404 = await client.get(f"/api/v1/repositories/{non_existent_id}/policy", headers=headers)
     assert res_404.status_code == 404
 
 
@@ -91,29 +107,41 @@ async def test_review_run_endpoints(client: AsyncClient, db_session, mock_arq_po
     db_session.add(run)
     await db_session.commit()
 
-    # 2. List reviews
-    res = await client.get("/api/v1/reviews")
+    # Obtain auth headers for installation 111222
+    res_login = await client.post(
+        "/api/v1/auth/dev-login",
+        json={"username": "reviewer", "github_user_id": 555666, "installation_ids": [111222]},
+    )
+    headers = {"Authorization": f"Bearer {res_login.json()['access_token']}"}
+
+    # 2. List reviews (unauthenticated request gets empty list)
+    res_anon = await client.get("/api/v1/reviews")
+    assert res_anon.status_code == 200
+    assert res_anon.json() == []
+
+    # List reviews (authenticated)
+    res = await client.get("/api/v1/reviews", headers=headers)
     assert res.status_code == 200
     reviews = res.json()
     assert len(reviews) >= 1
     assert any(r["pull_number"] == 42 for r in reviews)
 
     # Filter by repo_id
-    res_filtered = await client.get(f"/api/v1/reviews?repo_id={repo.id}")
+    res_filtered = await client.get(f"/api/v1/reviews?repo_id={repo.id}", headers=headers)
     assert res_filtered.status_code == 200
     assert len(res_filtered.json()) == 1
 
     # 3. Get specific review details
-    res_detail = await client.get(f"/api/v1/reviews/{run.id}")
+    res_detail = await client.get(f"/api/v1/reviews/{run.id}", headers=headers)
     assert res_detail.status_code == 200
     assert res_detail.json()["commit_sha"] == "abcdef1234567890"
 
     # 4. Non-existent review returns 404
-    res_not_found = await client.get(f"/api/v1/reviews/{uuid.uuid4()}")
+    res_not_found = await client.get(f"/api/v1/reviews/{uuid.uuid4()}", headers=headers)
     assert res_not_found.status_code == 404
 
     # 5. Rerun review
-    res_rerun = await client.post(f"/api/v1/reviews/{run.id}/rerun")
+    res_rerun = await client.post(f"/api/v1/reviews/{run.id}/rerun", headers=headers)
     assert res_rerun.status_code == 202
     assert res_rerun.json()["status"] == "queued"
     mock_arq_pool.enqueue_job.assert_called_with("process_pull_request_review", run_id=str(run.id))

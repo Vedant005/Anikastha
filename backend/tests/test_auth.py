@@ -147,7 +147,11 @@ async def test_multi_tenant_repository_and_review_isolation(client: AsyncClient,
     )
     assert res_forbidden_policy.status_code == 404
 
-    # 9. Verify anonymous request without auth returns all repos for backward compatibility
+    # 9. Verify anonymous request without auth returns empty list (zero cross-tenant leakage)
     res_anon = await client.get("/api/v1/repositories")
     assert res_anon.status_code == 200
-    assert len(res_anon.json()) >= 2
+    assert res_anon.json() == []
+
+    res_anon_reviews = await client.get("/api/v1/reviews")
+    assert res_anon_reviews.status_code == 200
+    assert res_anon_reviews.json() == []
