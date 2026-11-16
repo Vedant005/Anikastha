@@ -2,6 +2,7 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { Repository, ReviewRun } from "@/lib/types";
 import { fetchRepositories, fetchReviews } from "../lib/api";
+import { safeLocalStorage } from "@/lib/storage";
 
 export interface LoadDataOptions {
   silent?: boolean;
@@ -44,6 +45,37 @@ export const useReviewStore = create<ReviewStoreState>()(
 
       loadInitialData: async (options = {}) => {
         const { silent = false, force = false } = options;
+
+        // Check whether user has an active session token
+        let hasToken = false;
+        if (typeof window !== "undefined") {
+          hasToken = Boolean(localStorage.getItem("anikastha_token"));
+          if (!hasToken) {
+            try {
+              const authData = localStorage.getItem("anikastha-auth-v1");
+              if (authData) {
+                const parsed = JSON.parse(authData);
+                hasToken = Boolean(parsed?.state?.token);
+              }
+            } catch {
+              // Ignore parse error
+            }
+          }
+        }
+
+        // If unauthenticated, ensure no private repositories or reviews are retained
+        if (!hasToken) {
+          set({
+            repositories: [],
+            reviews: [],
+            isLoading: false,
+            isRevalidating: false,
+            selectedRepoId: null,
+            error: null,
+          });
+          return;
+        }
+
         const currentRepos = get().repositories;
         const currentReviews = get().reviews;
         const hasCachedData =
@@ -90,11 +122,9 @@ export const useReviewStore = create<ReviewStoreState>()(
               reviews: revs,
               isRevalidating: false,
               lastSyncedAt: Date.now(),
-            })
+            }),
           )
-          .catch((err) =>
-            set({ error: err.message, isRevalidating: false })
-          );
+          .catch((err) => set({ error: err.message, isRevalidating: false }));
       },
 
       updateReviewInList: (updated) => {
@@ -109,7 +139,7 @@ export const useReviewStore = create<ReviewStoreState>()(
     }),
     {
       name: "pr-sentinel-store-v1",
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(() => safeLocalStorage),
       partialize: (state) => ({
         repositories: state.repositories,
         reviews: state.reviews,
@@ -119,6 +149,6 @@ export const useReviewStore = create<ReviewStoreState>()(
       onRehydrateStorage: () => (state) => {
         state?.setHasHydrated(true);
       },
-    }
-  )
+    },
+  ),
 );

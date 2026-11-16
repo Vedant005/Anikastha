@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { AuthConfig, User } from "@/lib/types";
+import { safeLocalStorage } from "@/lib/storage";
 import {
   fetchAuthConfig as apiFetchAuthConfig,
   exchangeOAuthCode,
@@ -14,9 +15,13 @@ interface AuthStoreState {
   authConfig: AuthConfig | null;
   isLoading: boolean;
   error: string | null;
+  showConsoleDemo: boolean;
+  hasHydrated: boolean;
 
+  setShowConsoleDemo: (show: boolean) => void;
   setToken: (token: string | null) => void;
   setUser: (user: User | null) => void;
+  setHasHydrated: (hydrated: boolean) => void;
   logout: () => void;
   fetchAuthConfig: () => Promise<void>;
   exchangeCode: (code: string) => Promise<User>;
@@ -32,15 +37,19 @@ export const useAuthStore = create<AuthStoreState>()(
       authConfig: null,
       isLoading: false,
       error: null,
+      showConsoleDemo: false,
+      hasHydrated: false,
 
+      setShowConsoleDemo: (show: boolean) => set({ showConsoleDemo: show }),
       setToken: (token) => set({ token }),
       setUser: (user) => set({ user }),
+      setHasHydrated: (hydrated: boolean) => set({ hasHydrated: hydrated }),
 
       logout: () => {
-        set({ token: null, user: null, error: null });
-        if (typeof window !== "undefined") {
-          localStorage.removeItem("pr_sentinel_token");
-        }
+        set({ token: null, user: null, error: null, showConsoleDemo: false });
+        safeLocalStorage.removeItem("anikastha_token");
+        safeLocalStorage.removeItem("anikastha-store-v1");
+        safeLocalStorage.removeItem("anikastha-auth-v1");
       },
 
       fetchAuthConfig: async () => {
@@ -48,7 +57,17 @@ export const useAuthStore = create<AuthStoreState>()(
           const config = await apiFetchAuthConfig();
           set({ authConfig: config });
         } catch (err: any) {
-          console.warn("Failed to fetch auth config:", err);
+          console.warn(
+            "Backend auth config unavailable, falling back to local dev mode:",
+            err?.message,
+          );
+          set({
+            authConfig: {
+              oauth_configured: false,
+              github_app_url: "https://github.com/apps/anikastha",
+              is_dev_mode: true,
+            },
+          });
         }
       },
 
@@ -62,9 +81,7 @@ export const useAuthStore = create<AuthStoreState>()(
             isLoading: false,
             error: null,
           });
-          if (typeof window !== "undefined") {
-            localStorage.setItem("pr_sentinel_token", res.access_token);
-          }
+          safeLocalStorage.setItem("pr_sentinel_token", res.access_token);
           return res.user;
         } catch (err: any) {
           set({
@@ -85,9 +102,7 @@ export const useAuthStore = create<AuthStoreState>()(
             isLoading: false,
             error: null,
           });
-          if (typeof window !== "undefined") {
-            localStorage.setItem("pr_sentinel_token", res.access_token);
-          }
+          safeLocalStorage.setItem("pr_sentinel_token", res.access_token);
           return res.user;
         } catch (err: any) {
           set({
@@ -106,18 +121,21 @@ export const useAuthStore = create<AuthStoreState>()(
           const user = await fetchCurrentUser();
           set({ user, error: null });
         } catch (err: any) {
-          // Token expired or invalid -> logout
+          // Token expired or invalid -> logout cleanly
           get().logout();
         }
       },
     }),
     {
-      name: "pr-sentinel-auth-v1",
-      storage: createJSONStorage(() => localStorage),
+      name: "anikastha-auth-v1",
+      storage: createJSONStorage(() => safeLocalStorage),
       partialize: (state) => ({
         token: state.token,
         user: state.user,
       }),
-    }
-  )
+      onRehydrateStorage: () => (state) => {
+        state?.setHasHydrated(true);
+      },
+    },
+  ),
 );
