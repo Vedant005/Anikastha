@@ -46,6 +46,23 @@ export interface Finding {
   created_at: string;
 }
 
+export interface User {
+  id: string;
+  github_user_id: number;
+  username: string;
+  name: string | null;
+  email: string | null;
+  avatar_url: string | null;
+  created_at: string;
+  installation_ids: number[];
+}
+
+export interface AuthConfig {
+  oauth_configured: boolean;
+  client_id: string | null;
+  is_dev_mode: boolean;
+}
+
 export interface ReviewRun {
   id: string;
   repository_id: string;
