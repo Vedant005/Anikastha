@@ -34,9 +34,15 @@ async def test_repositories_and_policy_endpoints(client: AsyncClient, db_session
     # 2. List repositories
     res = await client.get("/api/v1/repositories")
     assert res.status_code == 200
+    assert "etag" in res.headers
+    etag = res.headers["etag"]
     repos = res.json()
     assert len(repos) >= 1
     assert any(r["full_name"] == "test-org/sentinel-demo" for r in repos)
+
+    # Test conditional GET with matching ETag -> 304 Not Modified
+    res_cached = await client.get("/api/v1/repositories", headers={"if-none-match": etag})
+    assert res_cached.status_code == 304
 
     # 3. Get repository policy
     res_pol = await client.get(f"/api/v1/repositories/{repo.id}/policy")
