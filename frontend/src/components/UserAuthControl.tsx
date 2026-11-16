@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useRef } from "react";
-import Image from "next/image";
+import Link from "next/link";
 import { useAuthStore } from "@/store/useAuthStore";
 import { useReviewStore } from "@/store/useReviewStore";
 import { getGitHubLoginUrl } from "@/lib/api";
@@ -10,10 +10,12 @@ import {
   User as UserIcon,
   ChevronDown,
   Shield,
-  Laptop,
+  AlertCircle,
+  ArrowRight,
+  Sparkles,
 } from "lucide-react";
 
-function GitHubIcon({ className = "w-3.5 h-3.5" }: { className?: string }) {
+export function GitHubIcon({ className = "w-3.5 h-3.5" }: { className?: string }) {
   return (
     <svg
       className={className}
@@ -30,9 +32,20 @@ function GitHubIcon({ className = "w-3.5 h-3.5" }: { className?: string }) {
   );
 }
 
-export function UserAuthControl() {
-  const { user, token, authConfig, fetchAuthConfig, logout, devLogin, checkSession } =
-    useAuthStore();
+interface UserAuthControlProps {
+  variant?: "header" | "hero" | "cta";
+}
+
+export function UserAuthControl({ variant = "header" }: UserAuthControlProps) {
+  const {
+    user,
+    token,
+    authConfig,
+    fetchAuthConfig,
+    logout,
+    devLogin,
+    checkSession,
+  } = useAuthStore();
   const { loadInitialData } = useReviewStore();
 
   const [isOpen, setIsOpen] = useState(false);
@@ -59,13 +72,18 @@ export function UserAuthControl() {
   }, []);
 
   const handleGitHubLogin = async () => {
-    try {
-      setIsLoggingIn(true);
-      const url = await getGitHubLoginUrl();
-      window.location.href = url;
-    } catch (err: any) {
-      alert(err.message || "Failed to initiate GitHub login");
-      setIsLoggingIn(false);
+    if (authConfig?.oauth_configured) {
+      try {
+        setIsLoggingIn(true);
+        const url = await getGitHubLoginUrl();
+        window.location.href = url;
+      } catch (err: any) {
+        alert(err.message || "Failed to initiate GitHub login");
+        setIsLoggingIn(false);
+      }
+    } else {
+      // Open modal showing test identities & setup guidance
+      setIsOpen(true);
     }
   };
 
@@ -87,18 +105,39 @@ export function UserAuthControl() {
 
   const handleLogout = async () => {
     logout();
+    useReviewStore.setState({
+      repositories: [],
+      reviews: [],
+      selectedRepoId: null,
+      lastSyncedAt: null,
+    });
     setIsOpen(false);
     await loadInitialData({ force: true });
   };
 
-  // If user is authenticated: show avatar + username + dropdown
+  // ─────────────────────────────────────────────────────────────
+  // 1. AUTHENTICATED STATE
+  // ─────────────────────────────────────────────────────────────
   if (token && user) {
+    if (variant === "hero" || variant === "cta") {
+      return (
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2 px-5 py-2.5 text-xs font-mono font-medium rounded-sm bg-[var(--ink-primary)] text-[var(--canvas)] hover:opacity-90 active:scale-[0.98] transition-all cursor-pointer shadow-sm"
+        >
+          <UserIcon className="w-3.5 h-3.5" />
+          <span>OPEN CONSOLE (@{user.username})</span>
+          <ArrowRight className="w-3.5 h-3.5" />
+        </Link>
+      );
+    }
+
     return (
       <div className="relative font-mono" ref={dropdownRef}>
         <button
           type="button"
           onClick={() => setIsOpen(!isOpen)}
-          className="inline-flex items-center gap-2 px-2 py-1 text-xs border border-[var(--hairline)] rounded-sm bg-[var(--surface)] text-[var(--ink-primary)] hover:border-[var(--ink-primary)] transition-colors"
+          className="inline-flex items-center gap-2 px-2.5 py-1.5 text-xs border border-[var(--hairline)] rounded-sm bg-[var(--surface)] text-[var(--ink-primary)] hover:border-[var(--ink-primary)] transition-colors cursor-pointer"
           title={`Signed in as @${user.username}`}
         >
           {user.avatar_url ? (
@@ -110,14 +149,14 @@ export function UserAuthControl() {
           ) : (
             <UserIcon className="w-3.5 h-3.5" />
           )}
-          <span className="font-medium hidden md:inline truncate max-w-[100px]">
+          <span className="font-medium hidden sm:inline truncate max-w-[120px]">
             {user.username}
           </span>
           <ChevronDown className="w-3 h-3 text-[var(--ink-muted)]" />
         </button>
 
         {isOpen && (
-          <div className="absolute right-0 mt-1.5 w-60 py-1.5 border border-[var(--hairline)] bg-[var(--surface)] rounded-sm shadow-xs z-50 text-xs">
+          <div className="absolute right-0 mt-1.5 w-64 py-1.5 border border-[var(--hairline)] bg-[var(--surface)] rounded-sm shadow-lg z-50 text-xs animate-in fade-in-50 zoom-in-95 duration-100">
             <div className="px-3 py-2 border-b border-[var(--hairline)]">
               <p className="font-semibold text-[var(--ink-primary)] truncate">
                 {user.name || user.username}
@@ -142,17 +181,24 @@ export function UserAuthControl() {
                 <div className="flex gap-1.5 flex-wrap">
                   <button
                     type="button"
-                    onClick={() => handleDevLogin("alice", [11111])}
+                    onClick={() => handleDevLogin("developer-personal", [12345])}
                     className="px-1.5 py-0.5 border border-[var(--hairline)] rounded-xs hover:border-[var(--ink-primary)]"
                   >
-                    Alice (11111)
+                    Personal (#12345)
                   </button>
                   <button
                     type="button"
-                    onClick={() => handleDevLogin("bob", [22222])}
+                    onClick={() => handleDevLogin("alice-security", [11111])}
                     className="px-1.5 py-0.5 border border-[var(--hairline)] rounded-xs hover:border-[var(--ink-primary)]"
                   >
-                    Bob (22222)
+                    Alice (#11111)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDevLogin("bob-enterprise", [22222])}
+                    className="px-1.5 py-0.5 border border-[var(--hairline)] rounded-xs hover:border-[var(--ink-primary)]"
+                  >
+                    Bob (#22222)
                   </button>
                 </div>
               </div>
@@ -161,7 +207,7 @@ export function UserAuthControl() {
             <button
               type="button"
               onClick={handleLogout}
-              className="w-full text-left px-3 py-2 text-[var(--signal-red)] hover:bg-[var(--signal-red-bg)] flex items-center gap-2 transition-colors"
+              className="w-full text-left px-3 py-2 text-[var(--signal-red)] hover:bg-[var(--signal-red-bg)] flex items-center gap-2 transition-colors cursor-pointer"
             >
               <LogOut className="w-3.5 h-3.5" />
               <span>Sign Out</span>
@@ -172,69 +218,118 @@ export function UserAuthControl() {
     );
   }
 
-  // If user is unauthenticated:
+  // ─────────────────────────────────────────────────────────────
+  // 2. UNAUTHENTICATED STATE
+  // ─────────────────────────────────────────────────────────────
+  const isHeroOrCta = variant === "hero" || variant === "cta";
+
   return (
-    <div className="relative font-mono flex items-center gap-1.5" ref={dropdownRef}>
-      {authConfig?.oauth_configured ? (
+    <>
+      <div className="relative font-mono flex items-center" ref={dropdownRef}>
         <button
           type="button"
           onClick={handleGitHubLogin}
           disabled={isLoggingIn}
-          className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs border border-[var(--hairline)] rounded-sm bg-[var(--surface)] text-[var(--ink-primary)] hover:border-[var(--ink-primary)] transition-colors"
+          className={
+            isHeroOrCta
+              ? "inline-flex items-center gap-2 px-5 py-2.5 text-xs font-mono font-medium rounded-sm bg-[var(--ink-primary)] text-[var(--canvas)] hover:opacity-90 active:scale-[0.98] transition-all cursor-pointer shadow-sm"
+              : "inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono font-medium border border-[var(--hairline)] rounded-sm bg-[var(--surface)] text-[var(--ink-primary)] hover:border-[var(--ink-primary)] transition-colors cursor-pointer"
+          }
           title="Sign in with GitHub"
         >
-          <GitHubIcon className="w-3.5 h-3.5" />
-          <span className="hidden sm:inline">Sign in</span>
+          <GitHubIcon className={isHeroOrCta ? "w-4 h-4 fill-current" : "w-3.5 h-3.5 fill-current"} />
+          <span>SIGN IN WITH GITHUB</span>
+          {isHeroOrCta && <ArrowRight className="w-3.5 h-3.5" />}
+          {!isHeroOrCta && !authConfig?.oauth_configured && (
+            <ChevronDown className="w-3 h-3 text-[var(--ink-muted)]" />
+          )}
         </button>
-      ) : null}
+      </div>
 
-      {/* Dev Login Helper when OAuth is not configured or in dev mode */}
-      {authConfig?.is_dev_mode && (
-        <button
-          type="button"
-          onClick={() => setIsOpen(!isOpen)}
-          className="inline-flex items-center gap-1.5 px-2 py-1 text-xs border border-dashed border-[var(--hairline)] rounded-sm bg-transparent text-[var(--ink-secondary)] hover:text-[var(--ink-primary)] transition-colors"
-          title="Quick Dev Login for Testing Multi-Tenancy"
-        >
-          <Laptop className="w-3 h-3" />
-          <span className="hidden lg:inline text-[11px]">Dev Auth</span>
-          <ChevronDown className="w-2.5 h-2.5 text-[var(--ink-muted)]" />
-        </button>
-      )}
+      {/* Dev Mode Modal Dialog with full-screen backdrop */}
+      {isOpen && !authConfig?.oauth_configured && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-[2px] p-4 font-mono">
+          <div className="w-full max-w-sm p-5 border border-[var(--hairline)] bg-[var(--surface)] rounded-sm shadow-xl text-xs space-y-4 animate-in fade-in zoom-in-95 duration-150">
+            <div className="flex items-start justify-between gap-3 border-b border-[var(--hairline)] pb-3">
+              <div className="flex items-center gap-2">
+                <GitHubIcon className="w-4 h-4" />
+                <span className="font-semibold text-sm text-[var(--ink-primary)]">
+                  GitHub Sign In
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsOpen(false)}
+                className="text-[var(--ink-muted)] hover:text-[var(--ink-primary)] text-sm px-1 cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
 
-      {isOpen && authConfig?.is_dev_mode && (
-        <div className="absolute right-0 mt-1.5 top-full w-52 py-2 border border-[var(--hairline)] bg-[var(--surface)] rounded-sm shadow-xs z-50 text-xs">
-          <div className="px-3 pb-1.5 border-b border-[var(--hairline)] text-[10.5px] text-[var(--ink-muted)] uppercase tracking-wider font-semibold">
-            Test Identities
-          </div>
-          <div className="pt-1.5 space-y-1">
-            <button
-              type="button"
-              onClick={() => handleDevLogin("developer-personal", [12345])}
-              className="w-full text-left px-3 py-1.5 hover:bg-[var(--canvas)] transition-colors flex items-center justify-between"
-            >
-              <span>Personal Org</span>
-              <span className="text-[10px] text-[var(--ink-muted)]">#12345</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => handleDevLogin("alice-security", [11111])}
-              className="w-full text-left px-3 py-1.5 hover:bg-[var(--canvas)] transition-colors flex items-center justify-between"
-            >
-              <span>Alice</span>
-              <span className="text-[10px] text-[var(--ink-muted)]">#11111</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => handleDevLogin("bob-enterprise", [22222])}
-              className="w-full text-left px-3 py-1.5 hover:bg-[var(--canvas)] transition-colors flex items-center justify-between"
-            >
-              <span>Bob</span>
-              <span className="text-[10px] text-[var(--ink-muted)]">#22222</span>
-            </button>
+            <div className="space-y-1.5 text-[var(--ink-secondary)]">
+              <div className="flex items-center gap-1.5 text-[var(--ink-primary)] font-medium">
+                <AlertCircle className="w-3.5 h-3.5" />
+                <span>Development Auth Mode</span>
+              </div>
+              <p className="text-[11px] leading-relaxed text-[var(--ink-muted)]">
+                Live GitHub OAuth requires <code className="bg-[var(--canvas)] px-1 py-0.5 rounded-xs border border-[var(--hairline)]">GITHUB_CLIENT_ID</code> and <code className="bg-[var(--canvas)] px-1 py-0.5 rounded-xs border border-[var(--hairline)]">GITHUB_CLIENT_SECRET</code> in <code className="bg-[var(--canvas)] px-1 py-0.5 rounded-xs border border-[var(--hairline)]">.env</code>.
+              </p>
+            </div>
+
+            <div className="pt-2 border-t border-[var(--hairline)] space-y-2">
+              <span className="text-[10px] font-semibold text-[var(--ink-muted)] uppercase tracking-wider block">
+                Select 1-Click Test Identity:
+              </span>
+              <div className="space-y-1.5">
+                <button
+                  type="button"
+                  onClick={() => handleDevLogin("developer-personal", [12345])}
+                  disabled={isLoggingIn}
+                  className="w-full text-left px-3 py-2 border border-[var(--hairline)] rounded-xs hover:border-[var(--ink-primary)] bg-[var(--canvas)] transition-colors flex items-center justify-between cursor-pointer"
+                >
+                  <div>
+                    <span className="font-medium text-[var(--ink-primary)] block">Personal Org User</span>
+                    <span className="text-[10px] text-[var(--ink-muted)]">@developer-personal</span>
+                  </div>
+                  <span className="text-[10px] px-1.5 py-0.5 bg-[var(--surface)] border border-[var(--hairline)] rounded-xs text-[var(--ink-secondary)]">
+                    #12345
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleDevLogin("alice-security", [11111])}
+                  disabled={isLoggingIn}
+                  className="w-full text-left px-3 py-2 border border-[var(--hairline)] rounded-xs hover:border-[var(--ink-primary)] bg-[var(--canvas)] transition-colors flex items-center justify-between cursor-pointer"
+                >
+                  <div>
+                    <span className="font-medium text-[var(--ink-primary)] block">Alice (Security Lead)</span>
+                    <span className="text-[10px] text-[var(--ink-muted)]">@alice-security</span>
+                  </div>
+                  <span className="text-[10px] px-1.5 py-0.5 bg-[var(--surface)] border border-[var(--hairline)] rounded-xs text-[var(--ink-secondary)]">
+                    #11111
+                  </span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => handleDevLogin("bob-enterprise", [22222])}
+                  disabled={isLoggingIn}
+                  className="w-full text-left px-3 py-2 border border-[var(--hairline)] rounded-xs hover:border-[var(--ink-primary)] bg-[var(--canvas)] transition-colors flex items-center justify-between cursor-pointer"
+                >
+                  <div>
+                    <span className="font-medium text-[var(--ink-primary)] block">Bob (Enterprise Dev)</span>
+                    <span className="text-[10px] text-[var(--ink-muted)]">@bob-enterprise</span>
+                  </div>
+                  <span className="text-[10px] px-1.5 py-0.5 bg-[var(--surface)] border border-[var(--hairline)] rounded-xs text-[var(--ink-secondary)]">
+                    #22222
+                  </span>
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
