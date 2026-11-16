@@ -1,6 +1,7 @@
+import hashlib
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
@@ -20,13 +21,40 @@ router = APIRouter(prefix="/repositories", tags=["Repositories"])
     summary="List Repositories",
 )
 async def list_repositories(
+    request: Request,
+    response: Response,
     db: AsyncSession = Depends(get_db),
-) -> list[Repository]:
-    """List all connected GitHub repositories."""
+):
+    """List all connected GitHub repositories with ETag caching support."""
     result = await db.execute(
         select(Repository).options(selectinload(Repository.policy)).order_by(Repository.full_name)
     )
-    return list(result.scalars().all())
+    repos = list(result.scalars().all())
+
+    # Generate deterministic ETag based on IDs, update timestamps, and active flags
+    etag_tokens = [
+        f"{r.id}:{r.updated_at.isoformat()}:{r.is_active}:{r.policy.updated_at.isoformat() if r.policy else ''}"
+        for r in repos
+    ]
+    raw_hash = hashlib.sha256(";".join(etag_tokens).encode("utf-8")).hexdigest()[:16]
+    etag = f'"{raw_hash}"'
+
+    # Set cache headers
+    response.headers["ETag"] = etag
+    response.headers["Cache-Control"] = "private, max-age=60, stale-while-revalidate=300"
+
+    # Evaluate conditional GET
+    if_none_match = request.headers.get("if-none-match")
+    if if_none_match and if_none_match == etag:
+        return Response(
+            status_code=status.HTTP_304_NOT_MODIFIED,
+            headers={
+                "ETag": etag,
+                "Cache-Control": "private, max-age=60, stale-while-revalidate=300",
+            },
+        )
+
+    return repos
 
 
 @router.get(
