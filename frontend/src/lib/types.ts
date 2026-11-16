@@ -16,6 +16,8 @@ export interface Policy {
 export interface Repository {
   id: string;
   github_repo_id: number;
+  name?: string;
+  private?: boolean;
   full_name: string;
   installation_id: number;
   is_active: boolean;
@@ -34,12 +36,17 @@ export interface Finding {
   file_path: string;
   line_start?: number;
   line_end?: number;
+  line_number?: number;
+  rule_id?: string;
+  message?: string;
+  verified?: boolean;
   code_snippet?: string;
   suggestion_markdown?: string;
   cve_id?: string;
   package_name?: string;
   current_version?: string;
   fixed_version?: string;
+  review_id?: string;
   is_verified: boolean;
   verification_reason?: string;
   published_inline: boolean;
@@ -59,7 +66,8 @@ export interface User {
 
 export interface AuthConfig {
   oauth_configured: boolean;
-  client_id: string | null;
+  client_id?: string | null;
+  github_app_url: string;
   is_dev_mode: boolean;
 }
 
@@ -84,4 +92,6 @@ export interface ReviewRun {
   completed_at?: string;
   created_at: string;
   findings?: Finding[];
+  pr_number?: number;
+  summary?: string;
 }
