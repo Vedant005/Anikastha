@@ -6,6 +6,7 @@ from fastapi import FastAPI, status
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
+from app.api.v1.auth import router as auth_router
 from app.api.v1.repositories import router as repositories_router
 from app.api.v1.reviews import router as reviews_router
 from app.api.v1.webhooks import router as webhooks_router
@@ -104,6 +105,7 @@ async def health_check() -> dict[str, str]:
     }
 
 
+app.include_router(auth_router, prefix="/api/v1")
 app.include_router(webhooks_router, prefix="/api/v1")
 app.include_router(reviews_router, prefix="/api/v1")
 app.include_router(repositories_router, prefix="/api/v1")
