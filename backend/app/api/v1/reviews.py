@@ -2,6 +2,7 @@ import asyncio
 import json
 import uuid
 from collections.abc import AsyncGenerator
+from typing import Annotated
 
 from arq.connections import ArqRedis
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -10,8 +11,10 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.api.deps import get_arq_pool, get_db
+from app.api.deps import get_arq_pool, get_current_user_optional, get_db
+from app.models.repository import Repository
 from app.models.review_run import ReviewRun
+from app.models.user import User
 from app.schemas.review_run import ReviewRunRead
 
 router = APIRouter(prefix="/reviews", tags=["Reviews"])
@@ -26,9 +29,10 @@ async def list_reviews(
     repo_id: uuid.UUID | None = Query(None, description="Filter by repository ID"),
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
+    current_user: Annotated[User | None, Depends(get_current_user_optional)] = None,
     db: AsyncSession = Depends(get_db),
 ) -> list[ReviewRun]:
-    """Retrieve paginated list of recent review runs."""
+    """Retrieve paginated list of recent review runs with user installation isolation."""
     query = (
         select(ReviewRun)
         .options(selectinload(ReviewRun.findings))
@@ -36,6 +40,13 @@ async def list_reviews(
         .limit(limit)
         .offset(offset)
     )
+
+    if current_user:
+        user_inst_ids = [inst.installation_id for inst in current_user.installations]
+        if not user_inst_ids:
+            return []
+        query = query.join(ReviewRun.repository).where(Repository.installation_id.in_(user_inst_ids))
+
     if repo_id:
         query = query.where(ReviewRun.repository_id == repo_id)
 
@@ -50,11 +61,14 @@ async def list_reviews(
 )
 async def get_review(
     review_id: uuid.UUID,
+    current_user: Annotated[User | None, Depends(get_current_user_optional)] = None,
     db: AsyncSession = Depends(get_db),
 ) -> ReviewRun:
     """Retrieve detailed information and findings for a specific review run."""
     result = await db.execute(
-        select(ReviewRun).options(selectinload(ReviewRun.findings)).where(ReviewRun.id == review_id)
+        select(ReviewRun)
+        .options(selectinload(ReviewRun.findings), selectinload(ReviewRun.repository))
+        .where(ReviewRun.id == review_id)
     )
     review_run = result.scalar_one_or_none()
     if not review_run:
@@ -62,6 +76,15 @@ async def get_review(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Review run '{review_id}' not found.",
         )
+
+    if current_user and review_run.repository:
+        user_inst_ids = [inst.installation_id for inst in current_user.installations]
+        if review_run.repository.installation_id not in user_inst_ids:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Review run '{review_id}' not found.",
+            )
+
     return review_run
 
 
@@ -72,17 +95,28 @@ async def get_review(
 )
 async def rerun_review(
     review_id: uuid.UUID,
+    current_user: Annotated[User | None, Depends(get_current_user_optional)] = None,
     db: AsyncSession = Depends(get_db),
     arq_pool: ArqRedis = Depends(get_arq_pool),
 ):
     """Manually trigger a re-run of an existing PR review."""
-    result = await db.execute(select(ReviewRun).where(ReviewRun.id == review_id))
+    result = await db.execute(
+        select(ReviewRun).options(selectinload(ReviewRun.repository)).where(ReviewRun.id == review_id)
+    )
     review_run = result.scalar_one_or_none()
     if not review_run:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Review run '{review_id}' not found.",
         )
+
+    if current_user and review_run.repository:
+        user_inst_ids = [inst.installation_id for inst in current_user.installations]
+        if review_run.repository.installation_id not in user_inst_ids:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Review run '{review_id}' not found.",
+            )
 
     review_run.status = "PENDING"
     review_run.error_message = None
