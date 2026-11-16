@@ -6,10 +6,13 @@ import { fetchRepositories } from "@/lib/api";
 import { Repository } from "@/lib/types";
 import { PolicyForm } from "@/components/PolicyForm";
 import { InkGlyph } from "@/components/InkGlyph";
+import { UserAuthControl } from "@/components/UserAuthControl";
+import { useAuthStore } from "@/store/useAuthStore";
 import { ArrowLeft, GitBranch, RefreshCw, Plus, ExternalLink, Menu } from "lucide-react";
 import { useSidebar } from "@/components/SidebarContext";
 
 export default function RepositoriesPage() {
+  const { token } = useAuthStore();
   const [repositories, setRepositories] = useState<Repository[]>([]);
   const [selectedRepo, setSelectedRepo] = useState<Repository | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -60,6 +63,7 @@ export default function RepositoriesPage() {
         </div>
 
         <div className="flex items-center gap-2">
+          <UserAuthControl />
           <button
             onClick={loadRepos}
             className="p-1.5 rounded-sm border border-[var(--hairline)] bg-[var(--surface)] text-[var(--ink-secondary)] hover:text-[var(--ink-primary)] hover:border-[var(--ink-primary)] transition-colors"
@@ -99,8 +103,12 @@ export default function RepositoriesPage() {
           </div>
 
           {repositories.length === 0 && !isLoading ? (
-            <div className="p-6 text-center rounded-sm bg-[var(--surface)] border border-[var(--hairline)] text-[var(--ink-muted)] text-xs font-mono">
-              No repositories connected yet. Install the GitHub App to enroll repositories.
+            <div className="p-6 text-center rounded-sm bg-[var(--surface)] border border-[var(--hairline)] text-xs font-mono space-y-2">
+              <p className="text-[var(--ink-secondary)]">
+                {token
+                  ? "No repositories connected to your account yet. Install the GitHub App to enroll repositories."
+                  : "Please sign in with GitHub above to view and manage your repositories."}
+              </p>
             </div>
           ) : (
             <div className="space-y-1.5">
