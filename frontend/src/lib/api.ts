@@ -6,19 +6,25 @@ export const API_BASE =
 export async function fetchReviews(
   repoId?: string,
   limit: number = 20,
+  forceRefresh: boolean = false,
 ): Promise<ReviewRun[]> {
   const url = new URL(`${API_BASE}/reviews`);
   if (repoId) url.searchParams.set("repo_id", repoId);
   url.searchParams.set("limit", limit.toString());
 
-  const res = await fetch(url.toString(), { cache: "no-store" });
+  const res = await fetch(url.toString(), {
+    cache: forceRefresh ? "no-store" : "default",
+  });
   if (!res.ok) throw new Error(`Failed to fetch reviews: ${res.statusText}`);
   return res.json();
 }
 
-export async function fetchReviewById(reviewId: string): Promise<ReviewRun> {
+export async function fetchReviewById(
+  reviewId: string,
+  forceRefresh: boolean = false,
+): Promise<ReviewRun> {
   const res = await fetch(`${API_BASE}/reviews/${reviewId}`, {
-    cache: "no-store",
+    cache: forceRefresh ? "no-store" : "default",
   });
   if (!res.ok)
     throw new Error(`Failed to fetch review ${reviewId}: ${res.statusText}`);
@@ -38,16 +44,23 @@ export async function rerunReview(
   return res.json();
 }
 
-export async function fetchRepositories(): Promise<Repository[]> {
-  const res = await fetch(`${API_BASE}/repositories`, { cache: "no-store" });
+export async function fetchRepositories(
+  forceRefresh: boolean = false,
+): Promise<Repository[]> {
+  const res = await fetch(`${API_BASE}/repositories`, {
+    cache: forceRefresh ? "no-store" : "default",
+  });
   if (!res.ok)
     throw new Error(`Failed to fetch repositories: ${res.statusText}`);
   return res.json();
 }
 
-export async function fetchRepositoryPolicy(repoId: string): Promise<Policy> {
+export async function fetchRepositoryPolicy(
+  repoId: string,
+  forceRefresh: boolean = false,
+): Promise<Policy> {
   const res = await fetch(`${API_BASE}/repositories/${repoId}/policy`, {
-    cache: "no-store",
+    cache: forceRefresh ? "no-store" : "default",
   });
   if (!res.ok)
     throw new Error(`Failed to fetch policy for ${repoId}: ${res.statusText}`);
