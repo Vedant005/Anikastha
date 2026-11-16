@@ -21,9 +21,14 @@ export function Sidebar() {
   const pathname = usePathname();
   const { repositories, reviews, selectedRepoId, setSelectedRepoId } =
     useReviewStore();
-  const { user } = useAuthStore();
+  const { user, token, showConsoleDemo } = useAuthStore();
   const { isOpen, closeSidebar } = useSidebar();
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Do not render sidebar on landing page or root when unauthenticated and not viewing console demo
+  if (pathname === "/landing" || (pathname === "/" && !token && !showConsoleDemo)) {
+    return null;
+  }
 
   const navItems = [
     {
@@ -254,7 +259,7 @@ export function Sidebar() {
             )}
             <div className="flex flex-col min-w-0">
               <span className="text-xs font-medium truncate text-[var(--ink-primary)]">
-                {user ? (user.name || `@${user.username}`) : "Guest User"}
+                {user ? user.name || `@${user.username}` : "Guest User"}
               </span>
               <span className="text-[10px] font-mono text-[var(--ink-muted)] truncate">
                 {user
@@ -266,9 +271,13 @@ export function Sidebar() {
 
           <span
             className={`w-2 h-2 rounded-full flex-shrink-0 ${
-              user ? "bg-[var(--ink-primary)]" : "border border-[var(--ink-muted)] bg-transparent"
+              user
+                ? "bg-[var(--ink-primary)]"
+                : "border border-[var(--ink-muted)] bg-transparent"
             }`}
-            title={user ? "Authenticated session active" : "Unauthenticated guest"}
+            title={
+              user ? "Authenticated session active" : "Unauthenticated guest"
+            }
           />
         </div>
       </div>
