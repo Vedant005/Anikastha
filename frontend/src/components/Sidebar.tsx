@@ -14,12 +14,14 @@ import {
 } from "lucide-react";
 import { InkGlyph } from "./InkGlyph";
 import { useReviewStore } from "@/store/useReviewStore";
+import { useAuthStore } from "@/store/useAuthStore";
 import { useSidebar } from "./SidebarContext";
 
 export function Sidebar() {
   const pathname = usePathname();
   const { repositories, reviews, selectedRepoId, setSelectedRepoId } =
     useReviewStore();
+  const { user } = useAuthStore();
   const { isOpen, closeSidebar } = useSidebar();
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -239,22 +241,34 @@ export function Sidebar() {
         {/* User Profile Row */}
         <div className="p-3 flex items-center justify-between w-full">
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="w-7 h-7 rounded-sm border border-[var(--hairline)] bg-[var(--canvas)] flex items-center justify-center font-mono font-semibold text-xs text-[var(--ink-primary)] flex-shrink-0">
-              VD
-            </div>
+            {user?.avatar_url ? (
+              <img
+                src={user.avatar_url}
+                alt={user.username}
+                className="w-7 h-7 rounded-sm border border-[var(--hairline)] object-cover flex-shrink-0"
+              />
+            ) : (
+              <div className="w-7 h-7 rounded-sm border border-[var(--hairline)] bg-[var(--canvas)] flex items-center justify-center font-mono font-semibold text-xs text-[var(--ink-primary)] flex-shrink-0">
+                {user ? user.username.slice(0, 2).toUpperCase() : "AG"}
+              </div>
+            )}
             <div className="flex flex-col min-w-0">
               <span className="text-xs font-medium truncate text-[var(--ink-primary)]">
-                vedant
+                {user ? (user.name || `@${user.username}`) : "Guest User"}
               </span>
-              {/* <span className="text-[10px] font-mono text-[var(--ink-muted)] truncate">
-                sec-engineer &bull; pro
-              </span> */}
+              <span className="text-[10px] font-mono text-[var(--ink-muted)] truncate">
+                {user
+                  ? `${user.installation_ids?.length || 0} org installation(s)`
+                  : "Not signed in"}
+              </span>
             </div>
           </div>
 
           <span
-            className="w-2 h-2 rounded-full bg-[var(--ink-primary)] flex-shrink-0"
-            title="Agent Daemon Active"
+            className={`w-2 h-2 rounded-full flex-shrink-0 ${
+              user ? "bg-[var(--ink-primary)]" : "border border-[var(--ink-muted)] bg-transparent"
+            }`}
+            title={user ? "Authenticated session active" : "Unauthenticated guest"}
           />
         </div>
       </div>
