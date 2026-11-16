@@ -22,14 +22,14 @@ export function Header({
   onRefresh,
   isRefreshing = false,
 }: HeaderProps) {
-  const { loadInitialData, isLoading } = useReviewStore();
+  const { loadInitialData, isLoading, isRevalidating } = useReviewStore();
   const { toggleSidebar } = useSidebar();
 
   const handleRefresh = () => {
     if (onRefresh) {
       onRefresh();
     } else {
-      loadInitialData();
+      loadInitialData({ force: true });
     }
   };
 
@@ -124,7 +124,7 @@ export function Header({
         >
           <RefreshCw
             className={`w-3.5 h-3.5 ${
-              isRefreshing || isLoading ? "animate-spin text-[var(--ink-primary)]" : ""
+              isRefreshing || isLoading || isRevalidating ? "animate-spin text-[var(--ink-primary)]" : ""
             }`}
           />
           <span className="hidden md:inline">SYNC</span>

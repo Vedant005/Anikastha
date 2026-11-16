@@ -21,7 +21,7 @@ export default function OverviewPage() {
   const [filter, setFilter] = useState<FilterStatus>("ALL");
 
   useEffect(() => {
-    loadInitialData();
+    loadInitialData({ silent: true });
   }, [loadInitialData]);
 
   // Find latest review for Hero card
