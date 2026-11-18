@@ -121,7 +121,7 @@ export function LandingPage({ onOpenConsole }: { onOpenConsole?: () => void }) {
         </h1>
 
         <p className="text-base sm:text-lg text-[var(--ink-secondary)] max-w-3xl leading-relaxed">
-          PR-Sentinel intercepts pull requests in &lt;500ms, parses AST syntax
+          Anikastha intercepts pull requests in &lt;500ms, parses AST syntax
           trees with Tree-sitter, audits CVEs against Google OSV databases, and
           enforces adversarial LangGraph verification before publishing
           actionable inline fix suggestions.
