@@ -153,6 +153,13 @@ async def exchange_github_code(
 
     await db.commit()
 
+    # 5b. Sync installations and repositories on-demand from GitHub API
+    try:
+        from app.github.sync import sync_all_for_user
+        await sync_all_for_user(user, db)
+    except Exception as sync_exc:
+        logger.warning("Automatic post-login repository sync encountered warning: %s", sync_exc)
+
     # Re-fetch user with installations eagerly loaded
     refreshed_result = await db.execute(
         select(User).options(selectinload(User.installations)).where(User.id == user.id)
@@ -230,6 +237,13 @@ async def dev_login(
             )
 
     await db.commit()
+
+    # 5b. Sync installations and repositories on-demand from GitHub API
+    try:
+        from app.github.sync import sync_all_for_user
+        await sync_all_for_user(user, db)
+    except Exception as sync_exc:
+        logger.warning("Automatic post-login repository sync encountered warning: %s", sync_exc)
 
     # Re-fetch user with installations eagerly loaded
     refreshed_result = await db.execute(

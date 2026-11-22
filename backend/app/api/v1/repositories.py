@@ -1,19 +1,22 @@
 import hashlib
+import logging
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.api.deps import get_current_user_optional, get_db
+from app.api.deps import get_current_user, get_current_user_optional, get_db
+from app.github.sync import sync_all_for_user
 from app.models.policy import Policy
 from app.models.repository import Repository
 from app.models.user import User
 from app.schemas.policy import PolicyRead, PolicyUpdate
 from app.schemas.repository import RepositoryRead
 
+logger = logging.getLogger("pr_sentinel.repositories")
 router = APIRouter(prefix="/repositories", tags=["Repositories"])
 
 
@@ -25,6 +28,7 @@ router = APIRouter(prefix="/repositories", tags=["Repositories"])
 async def list_repositories(
     request: Request,
     response: Response,
+    sync: bool = Query(False, description="Trigger on-demand sync from GitHub API"),
     current_user: Annotated[User | None, Depends(get_current_user_optional)] = None,
     db: AsyncSession = Depends(get_db),
 ):
@@ -34,13 +38,33 @@ async def list_repositories(
         return []
 
     user_inst_ids = [inst.installation_id for inst in current_user.installations]
+
+    # If user has no installations in DB, or DB has 0 repositories, or sync requested:
+    # Attempt an active on-demand synchronization with GitHub REST API
+    should_sync = sync or not user_inst_ids
+    if not should_sync:
+        check_query = select(Repository.id).where(
+            Repository.installation_id.in_(user_inst_ids),
+            Repository.is_active == True,  # noqa: E712
+        ).limit(1)
+        has_any = (await db.execute(check_query)).scalar_one_or_none()
+        if not has_any:
+            should_sync = True
+
+    if should_sync:
+        try:
+            await sync_all_for_user(current_user, db)
+            user_inst_ids = [inst.installation_id for inst in current_user.installations]
+        except Exception as exc:
+            logger.warning("Active repository sync encountered warning: %s", exc)
+
     if not user_inst_ids:
         return []
 
     query = (
         select(Repository)
         .options(selectinload(Repository.policy))
-        .where(Repository.installation_id.in_(user_inst_ids))
+        .where(Repository.installation_id.in_(user_inst_ids), Repository.is_active == True)  # noqa: E712
         .order_by(Repository.full_name)
     )
 
@@ -61,7 +85,7 @@ async def list_repositories(
 
     # Evaluate conditional GET
     if_none_match = request.headers.get("if-none-match")
-    if if_none_match and if_none_match == etag:
+    if if_none_match and if_none_match == etag and not sync:
         return Response(
             status_code=status.HTTP_304_NOT_MODIFIED,
             headers={
@@ -70,6 +94,25 @@ async def list_repositories(
             },
         )
 
+    return repos
+
+
+@router.post(
+    "/sync",
+    response_model=list[RepositoryRead],
+    summary="Sync Repositories from GitHub API",
+)
+async def sync_repositories_endpoint(
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    On-demand API synchronization:
+    1. Discovers newly enrolled installations for the authenticated user.
+    2. Queries GitHub API (GET /installation/repositories) to sync all repositories.
+    3. Returns the refreshed repository list.
+    """
+    repos = await sync_all_for_user(current_user, db)
     return repos
 
 
