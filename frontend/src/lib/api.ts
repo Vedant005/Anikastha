@@ -135,13 +135,33 @@ export async function fetchRepositories(
   forceRefresh: boolean = false,
 ): Promise<Repository[]> {
   const headers = getAuthHeaders();
-  const res = await fetch(`${API_BASE}/repositories`, {
+  const url = new URL(`${API_BASE}/repositories`);
+  if (forceRefresh) {
+    url.searchParams.set("sync", "true");
+  }
+  const res = await fetch(url.toString(), {
     headers: { ...headers },
     cache: forceRefresh ? "no-store" : "default",
   });
   if (!res.ok)
     throw new Error(`Failed to fetch repositories: ${res.statusText}`);
   return res.json();
+}
+
+export async function syncRepositories(): Promise<Repository[]> {
+  const headers = getAuthHeaders();
+  try {
+    const res = await fetch(`${API_BASE}/repositories/sync`, {
+      method: "POST",
+      headers: { ...headers },
+    });
+    if (res.ok) {
+      return res.json();
+    }
+  } catch {
+    // fallback
+  }
+  return fetchRepositories(true);
 }
 
 export async function fetchRepositoryPolicy(

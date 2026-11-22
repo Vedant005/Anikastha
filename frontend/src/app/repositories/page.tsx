@@ -2,13 +2,20 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { fetchRepositories } from "@/lib/api";
+import { fetchRepositories, syncRepositories } from "@/lib/api";
 import { Repository } from "@/lib/types";
 import { PolicyForm } from "@/components/PolicyForm";
 import { InkGlyph } from "@/components/InkGlyph";
 import { UserAuthControl } from "@/components/UserAuthControl";
 import { useAuthStore } from "@/store/useAuthStore";
-import { ArrowLeft, GitBranch, RefreshCw, Plus, ExternalLink, Menu } from "lucide-react";
+import {
+  ArrowLeft,
+  GitBranch,
+  RefreshCw,
+  Plus,
+  ExternalLink,
+  Menu,
+} from "lucide-react";
 import { useSidebar } from "@/components/SidebarContext";
 
 export default function RepositoriesPage() {
@@ -19,11 +26,11 @@ export default function RepositoriesPage() {
   const [error, setError] = useState<string | null>(null);
   const { toggleSidebar } = useSidebar();
 
-  const loadRepos = async () => {
+  const loadRepos = async (isSync = false) => {
     setIsLoading(true);
     setError(null);
     try {
-      const data = await fetchRepositories();
+      const data = isSync ? await syncRepositories() : await fetchRepositories();
       setRepositories(data);
       if (data.length > 0 && !selectedRepo) {
         setSelectedRepo(data[0]);
@@ -59,15 +66,17 @@ export default function RepositoriesPage() {
             reviews
           </Link>
           <span className="text-[var(--ink-muted)]">/</span>
-          <span className="text-[var(--ink-primary)] font-medium">repositories &amp; policy</span>
+          <span className="text-[var(--ink-primary)] font-medium">
+            repositories &amp; policy
+          </span>
         </div>
 
         <div className="flex items-center gap-2">
           <UserAuthControl />
           <button
-            onClick={loadRepos}
-            className="p-1.5 rounded-sm border border-[var(--hairline)] bg-[var(--surface)] text-[var(--ink-secondary)] hover:text-[var(--ink-primary)] hover:border-[var(--ink-primary)] transition-colors"
-            title="Refresh repositories"
+            onClick={() => loadRepos(true)}
+            className="p-1.5 rounded-sm border border-[var(--hairline)] bg-[var(--surface)] text-[var(--ink-secondary)] hover:text-[var(--ink-primary)] hover:border-[var(--ink-primary)] transition-colors cursor-pointer"
+            title="Sync & refresh repositories from GitHub"
           >
             <RefreshCw
               className={`w-3.5 h-3.5 ${
@@ -76,7 +85,7 @@ export default function RepositoriesPage() {
             />
           </button>
           <a
-            href="https://github.com/apps/pr-sentinel"
+            href="https://github.com/apps/anikastha"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-mono font-medium rounded-sm bg-[var(--ink-primary)] text-[var(--canvas)] hover:opacity-90 transition-opacity"
@@ -169,7 +178,8 @@ export default function RepositoriesPage() {
             </div>
           ) : (
             <div className="p-12 text-center rounded-sm bg-[var(--surface)] border border-[var(--hairline)] text-[var(--ink-muted)] text-xs font-mono">
-              Select a repository on the left to configure its security verdict policy.
+              Select a repository on the left to configure its security verdict
+              policy.
             </div>
           )}
         </div>
