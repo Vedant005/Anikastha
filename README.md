@@ -21,6 +21,7 @@ Anikastha is an autonomous, context-aware security code reviewer that intercepts
   - **Red-Team Verifier**: Adversarially evaluates candidate findings to eliminate false positives and strictly validates git diff line coordinates to prevent GitHub 422 API errors.
   - **Verdict Calculator**: Enforces custom repository security policies (`APPROVE`, `COMMENT`, or `REQUEST_CHANGES`).
 - **Actionable GitHub Inline Comments**: Posts line-targeted comments with formatted ````suggestion code replacements and sticky top-level review summaries, with automatic fallback protection against GitHub 422 errors.
+- **Model Context Protocol (MCP) Server & Client**: Exposes native MCP tools, resources, and prompts over `stdio` and `SSE` to Cursor, Claude Desktop, Windsurf, VS Code (Cline/Continue), and JetBrains for local pre-commit diff scanning, PR audits, and policy queries.
 - **Modern Web Dashboard**: Next.js App Router (React 19), Tailwind CSS v4, and Zustand UI for tracking live review runs via SSE, inspecting findings, and configuring repository policies.
 
 ---
@@ -77,6 +78,7 @@ flowchart TD
 | **AI Orchestration** | LangGraph + LangChain | Multi-agent state graph with specialist and verifier nodes |
 | **LLM Support** | Multi-Provider Factory | Google Gemini, OpenAI GPT-4o, Anthropic Claude, Groq, OpenRouter, HuggingFace, Custom/vLLM |
 | **Vulnerability Intelligence** | OSV.dev REST API | Batch querying for PyPI and npm security advisories |
+| **Model Context Protocol (MCP)** | Official Python MCP SDK | FastMCP / `MCPServer`, `stdio` & Server-Sent Events (`SSE`) |
 | **Frontend Dashboard** | Next.js 15 (App Router) + React 19 | Tailwind CSS v4, Zustand state management, Server-Sent Events |
 | **Containerization** | Docker & Docker Compose | Multi-container setup for dev and production |
 
@@ -97,7 +99,7 @@ PrSentinel/
 │   ├── alembic.ini            # Database migration configuration
 │   ├── alembic/               # Database migration scripts
 │   ├── app/
-│   │   ├── main.py            # FastAPI entrypoint, CORS, lifespan, SSE routes
+│   │   ├── main.py            # FastAPI entrypoint, CORS, lifespan, SSE & MCP routes
 │   │   ├── core/              # Config (Pydantic v2), DB session, Redis pool, HMAC
 │   │   ├── models/            # SQLAlchemy declarative models (Repository, Policy, ReviewRun, Finding)
 │   │   ├── schemas/           # Pydantic DTOs & validation models
@@ -105,8 +107,16 @@ PrSentinel/
 │   │   ├── github/            # GitHub App JWT auth, REST client, diff parser, publisher
 │   │   ├── analyzer/          # Tree-sitter AST parser, OSV.dev client, license compliance
 │   │   ├── review_engine/     # LangGraph workflow, nodes, prompts, multi-provider LLM factory
+│   │   ├── mcp/               # Model Context Protocol server (stdio/SSE), tools, resources & client
 │   │   └── worker/            # ARQ background worker & review processing task
-│   └── tests/                 # Unit and integration test suite (58 passing tests)
+│   └── tests/                 # Unit and integration test suite (74 passing tests)
+│
+├── mcp_configs/               # IDE configuration templates (Cursor, Claude Desktop, Windsurf, VS Code)
+│   ├── README.md              # Cross-IDE setup guide
+│   ├── cursor.json
+│   ├── claude_desktop.json
+│   ├── windsurf.json
+│   └── cline_vscode.json
 │
 └── frontend/                  # Next.js App Router Dashboard
     ├── Dockerfile             # Production container for Next.js
@@ -227,6 +237,75 @@ PR-Sentinel features a unified **Multi-Provider LLM Factory** (`app/review_engin
 
 ---
 
+## Model Context Protocol (MCP) Integration
+
+PR-Sentinel exposes a native **Model Context Protocol (MCP)** server supporting both `stdio` (local IDE agents) and Server-Sent Events (`SSE` at `http://localhost:8000/mcp/sse`). This empowers AI coding assistants inside **Cursor, Claude Desktop, Windsurf, VS Code (Cline / Continue), and JetBrains** to run pre-commit scans on git diffs, inspect PR review verdicts, and query security policies directly from the editor.
+
+### Available MCP Tools & Capabilities
+
+| Tool | Parameters | Description |
+| :--- | :--- | :--- |
+| `scan_local_diff` | `diff_content`, `repo_name` | Analyzes unstaged or staged git unified diffs for SQL injection (`CWE-89`), hardcoded secrets (`CWE-798`), command injection (`CWE-78`), unsafe deserialization (`CWE-502`), bare exceptions (`CWE-391`), and async event loop blocking (`CWE-400`). Returns exact line coordinates and ````suggestion blocks. |
+| `audit_pull_request` | `repo_full_name`, `pr_number` | Retrieves live PR-Sentinel audit results, verified findings, CVE status, and security metrics for any open PR. |
+| `get_repo_policy` | `repo_full_name` | Retrieves active blocking severities, banned packages, and allowed licenses. |
+| `explain_finding` | `cwe`, `title`, `description`, `code_snippet` | In-depth architectural explanation and attack surface breakdown for a vulnerability. |
+| `suggest_patch` | `cwe`, `code_snippet`, `language` | Returns production-ready replacement suggestion blocks based on CWE pattern. |
+
+### MCP Resources & Prompts
+- **Resources**:
+  - `pr-sentinel://policy/{repo_full_name}`: Active security policy rules in JSON.
+  - `pr-sentinel://reviews/{review_id}`: Review status, verdict, and findings by review UUID.
+- **Prompts**:
+  - `security-precommit-check`: Adversarial security review template for AI coding agents inspecting local diffs.
+  - `explain-cwe-remediation`: Step-by-step remediation guide adhering to secure coding standards.
+
+### IDE Setup
+
+#### 1. Cursor Setup
+Add to `.cursor/mcp.json` (or your Cursor Settings -> Features -> MCP):
+```json
+{
+  "mcpServers": {
+    "pr-sentinel": {
+      "command": "python",
+      "args": ["-m", "app.mcp", "--transport", "stdio"],
+      "cwd": "${workspaceFolder}/backend",
+      "env": {
+        "PYTHONPATH": "${workspaceFolder}/backend"
+      }
+    }
+  }
+}
+```
+
+#### 2. Claude Desktop Setup
+Add to `%APPDATA%\Claude\claude_desktop_config.json` (Windows) or `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS):
+```json
+{
+  "mcpServers": {
+    "pr-sentinel": {
+      "command": "python",
+      "args": ["-m", "app.mcp", "--transport", "stdio"],
+      "cwd": "/path/to/PrSentinel/backend",
+      "env": {
+        "PYTHONPATH": "/path/to/PrSentinel/backend"
+      }
+    }
+  }
+}
+```
+
+#### 3. CLI Runner
+Run the MCP server directly from the terminal or in pre-commit hooks:
+```bash
+cd backend
+python -m app.mcp --transport stdio
+```
+
+*For Windsurf, VS Code (Cline/Continue), and JetBrains configuration guides, see [mcp_configs/README.md](mcp_configs/README.md).*
+
+---
+
 ## Running Tests & Linters
 
 ### Backend Test Suite (Pytest + Coverage)
@@ -234,7 +313,7 @@ PR-Sentinel features a unified **Multi-Provider LLM Factory** (`app/review_engin
 cd backend
 pytest -v --cov=app --cov-report=term-missing
 ```
-*Current test suite: **58 passed tests** covering AST parsing, git diff coordinate validation, OSV.dev batch queries, LangGraph review pipelines, GitHub comment publishing, webhooks, and REST/SSE endpoints.*
+*Current test suite: **74 passed tests** covering AST parsing, git diff coordinate validation, OSV.dev batch queries, LangGraph review pipelines, GitHub comment publishing, webhooks, Model Context Protocol (MCP) server tools, and REST/SSE endpoints.*
 
 ### Code Quality (Ruff)
 ```bash

@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "pr-sentinel": {
+      "command": "python",
+      "args": ["-m", "app.mcp", "--transport", "stdio"],
+      "cwd": "${workspaceRoot}/backend",
+      "env": {
+        "PYTHONPATH": "${workspaceRoot}/backend"
+      }
+    }
+  }
+}

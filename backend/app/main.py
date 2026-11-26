@@ -13,6 +13,7 @@ from app.api.v1.webhooks import router as webhooks_router
 from app.core.config import get_settings
 from app.core.database import Base, engine
 from app.core.redis import close_arq_pool, close_redis_client, get_redis_client
+from app.mcp.server import mcp_server
 
 settings = get_settings()
 
@@ -111,3 +112,6 @@ app.include_router(auth_router, prefix="/api/v1")
 app.include_router(webhooks_router, prefix="/api/v1")
 app.include_router(reviews_router, prefix="/api/v1")
 app.include_router(repositories_router, prefix="/api/v1")
+
+# Mount Model Context Protocol (MCP) SSE Server endpoint
+app.mount("/mcp", mcp_server.sse_app())
