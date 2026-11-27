@@ -8,7 +8,6 @@ Anikastha is an autonomous, context-aware security code reviewer that intercepts
 
 <img width="1913" height="874" alt="image" src="https://github.com/user-attachments/assets/538617b3-afa4-425a-b67d-407bdc4c9f03" />
 
-
 ## Key Capabilities
 
 - **Sub-Second Webhook Ingestion**: Verifies GitHub HMAC-SHA256 signatures in constant time and offloads review jobs to an asynchronous ARQ/Redis queue in <500ms.
@@ -34,17 +33,17 @@ flowchart TD
     API -->|1. HMAC Verification| SEC[Security / Auth Guard]
     API -->|2. Enqueue Job| REDIS[(Redis Queue & Cache)]
     API -->|3. Immediate 202 Accepted| GH
-    
+
     WORKER[ARQ Background Worker] -->|Pulls Job| REDIS
     WORKER -->|Fetch Diffs & Files| GH_CLIENT[GitHub API Client]
-    
+
     subgraph Analysis_Engine [Code & Dependency Analysis Engine]
         GH_CLIENT --> DIFF_P[Git Diff & Hunk Parser]
         GH_CLIENT --> TS_PARSER["Tree-sitter AST Parser (Py/TS)"]
         GH_CLIENT --> DEP_PARSER[Manifest & Lockfile Parser]
         DEP_PARSER --> OSV_CLIENT[OSV.dev REST Client]
     end
- 
+
     subgraph LangGraph_Review [LangGraph Multi-Agent Security Engine]
         DIFF_P & TS_PARSER & OSV_CLIENT --> STATE[Review Graph State]
         STATE --> CODE_AGENT[Code Security Specialist Node]
@@ -55,10 +54,10 @@ flowchart TD
     end
 
     VERDICT -->|Publish Review & Inline Comments| GH_PUB[GitHub Review Publisher]
-    GH_PUB -->|"POST /pulls/{id}/reviews"| GH   
-    
+    GH_PUB -->|"POST /pulls/{id}/reviews"| GH
+
     WORKER -->|Persist Results| DB[(PostgreSQL Database)]
-    
+
     subgraph Frontend_App [Next.js Dashboard]
         DASH[Next.js + Tailwind v4 + Zustand UI] -->|REST / SSE /api/v1/reviews| API
         DB --> API
@@ -69,25 +68,25 @@ flowchart TD
 
 ## Tech Stack
 
-| Layer | Technology | Version / Tooling |
-| :--- | :--- | :--- |
-| **Backend API** | Python 3.12 + FastAPI | Async route handlers, Pydantic v2 schemas, lifespan management |
-| **Worker Queue** | ARQ + Redis | Native `asyncio` task processing with retry policies |
-| **Database & ORM** | PostgreSQL + SQLAlchemy 2.0 | Async engine (`asyncpg`), Alembic schema migrations |
-| **AST Analysis** | Tree-sitter | `tree-sitter-python` & `tree-sitter-typescript` |
-| **AI Orchestration** | LangGraph + LangChain | Multi-agent state graph with specialist and verifier nodes |
-| **LLM Support** | Multi-Provider Factory | Google Gemini, OpenAI GPT-4o, Anthropic Claude, Groq, OpenRouter, HuggingFace, Custom/vLLM |
-| **Vulnerability Intelligence** | OSV.dev REST API | Batch querying for PyPI and npm security advisories |
-| **Model Context Protocol (MCP)** | Official Python MCP SDK | FastMCP / `MCPServer`, `stdio` & Server-Sent Events (`SSE`) |
-| **Frontend Dashboard** | Next.js 15 (App Router) + React 19 | Tailwind CSS v4, Zustand state management, Server-Sent Events |
-| **Containerization** | Docker & Docker Compose | Multi-container setup for dev and production |
+| Layer                            | Technology                         | Version / Tooling                                                                          |
+| :------------------------------- | :--------------------------------- | :----------------------------------------------------------------------------------------- |
+| **Backend API**                  | Python 3.12 + FastAPI              | Async route handlers, Pydantic v2 schemas, lifespan management                             |
+| **Worker Queue**                 | ARQ + Redis                        | Native `asyncio` task processing with retry policies                                       |
+| **Database & ORM**               | PostgreSQL + SQLAlchemy 2.0        | Async engine (`asyncpg`), Alembic schema migrations                                        |
+| **AST Analysis**                 | Tree-sitter                        | `tree-sitter-python` & `tree-sitter-typescript`                                            |
+| **AI Orchestration**             | LangGraph + LangChain              | Multi-agent state graph with specialist and verifier nodes                                 |
+| **LLM Support**                  | Multi-Provider Factory             | Google Gemini, OpenAI GPT-4o, Anthropic Claude, Groq, OpenRouter, HuggingFace, Custom/vLLM |
+| **Vulnerability Intelligence**   | OSV.dev REST API                   | Batch querying for PyPI and npm security advisories                                        |
+| **Model Context Protocol (MCP)** | Official Python MCP SDK            | FastMCP / `MCPServer`, `stdio` & Server-Sent Events (`SSE`)                                |
+| **Frontend Dashboard**           | Next.js 15 (App Router) + React 19 | Tailwind CSS v4, Zustand state management, Server-Sent Events                              |
+| **Containerization**             | Docker & Docker Compose            | Multi-container setup for dev and production                                               |
 
 ---
 
 ## Project Structure
 
 ```
-PrSentinel/
+Anikastha/
 ├── AGENTS.md                  # Development guidelines & architectural contract
 ├── README.md                  # Project overview, architecture, & quickstart
 ├── .env.example               # Environment variables template
@@ -150,21 +149,25 @@ PrSentinel/
 ### Option 1: Quickstart with Docker Compose
 
 1. **Clone the repository**:
+
    ```bash
-   git clone https://github.com/Vedant005/PrSentinel.git
-   cd PrSentinel
+   git clone https://github.com/Vedant005/Anikastha.git
+   cd Anikastha
    ```
 
 2. **Configure environment variables**:
+
    ```bash
    cp .env.example .env
    # Edit .env and fill in your GITHUB_APP_ID, GITHUB_WEBHOOK_SECRET, and LLM API Key
    ```
 
 3. **Start all services**:
+
    ```bash
    docker compose up -d
    ```
+
    This spins up:
    - `postgres` (Port 5432)
    - `redis` (Port 6379)
@@ -182,11 +185,13 @@ PrSentinel/
 ### Option 2: Native Local Development
 
 #### 1. Start Infrastructure (PostgreSQL & Redis)
+
 ```bash
 docker compose up -d postgres redis
 ```
 
 #### 2. Setup and Run Backend
+
 ```bash
 cd backend
 
@@ -208,6 +213,7 @@ arq app.worker.worker.WorkerSettings
 ```
 
 #### 3. Setup and Run Frontend
+
 ```bash
 cd frontend
 
@@ -217,44 +223,46 @@ npm install
 # Start Next.js development server
 npm run dev
 ```
+
 Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ---
 
 ## Supported LLM Providers
 
-PR-Sentinel features a unified **Multi-Provider LLM Factory** (`app/review_engine/llm_factory.py`) supporting:
+Anikastha features a unified **Multi-Provider LLM Factory** (`app/review_engine/llm_factory.py`) supporting:
 
-| Provider | `LLM_PROVIDER` Setting | Required Environment Variable | Default Model |
-| :--- | :--- | :--- | :--- |
-| **Google Gemini** (Default) | `gemini` | `GEMINI_API_KEY` | `gemini-2.5-flash` |
-| **OpenAI** | `openai` | `OPENAI_API_KEY` | `gpt-4o` |
-| **Anthropic** | `anthropic` | `ANTHROPIC_API_KEY` | `claude-3-5-sonnet-20241022` |
-| **Groq** | `groq` | `GROQ_API_KEY` | `llama-3.3-70b-versatile` |
-| **OpenRouter** | `openrouter` | `OPENROUTER_API_KEY` | `anthropic/claude-3.5-sonnet` |
-| **Hugging Face** | `huggingface` | `HUGGINGFACE_API_KEY` | `meta-llama/Llama-3.3-70B-Instruct` |
-| **Custom / Local (vLLM, Ollama)** | `custom` | `LLM_BASE_URL` | Configurable |
+| Provider                          | `LLM_PROVIDER` Setting | Required Environment Variable | Default Model                       |
+| :-------------------------------- | :--------------------- | :---------------------------- | :---------------------------------- |
+| **Google Gemini** (Default)       | `gemini`               | `GEMINI_API_KEY`              | `gemini-2.5-flash`                  |
+| **OpenAI**                        | `openai`               | `OPENAI_API_KEY`              | `gpt-4o`                            |
+| **Anthropic**                     | `anthropic`            | `ANTHROPIC_API_KEY`           | `claude-3-5-sonnet-20241022`        |
+| **Groq**                          | `groq`                 | `GROQ_API_KEY`                | `llama-3.3-70b-versatile`           |
+| **OpenRouter**                    | `openrouter`           | `OPENROUTER_API_KEY`          | `anthropic/claude-3.5-sonnet`       |
+| **Hugging Face**                  | `huggingface`          | `HUGGINGFACE_API_KEY`         | `meta-llama/Llama-3.3-70B-Instruct` |
+| **Custom / Local (vLLM, Ollama)** | `custom`               | `LLM_BASE_URL`                | Configurable                        |
 
 ---
 
 ## Model Context Protocol (MCP) Integration
 
-PR-Sentinel exposes a native **Model Context Protocol (MCP)** server supporting both `stdio` (local IDE agents) and Server-Sent Events (`SSE` at `http://localhost:8000/mcp/sse`). This empowers AI coding assistants inside **Cursor, Claude Desktop, Windsurf, VS Code (Cline / Continue), and JetBrains** to run pre-commit scans on git diffs, inspect PR review verdicts, and query security policies directly from the editor.
+Anikastha exposes a native **Model Context Protocol (MCP)** server supporting both `stdio` (local IDE agents) and Server-Sent Events (`SSE` at `http://localhost:8000/mcp/sse`). This empowers AI coding assistants inside **Cursor, Claude Desktop, Windsurf, VS Code (Cline / Continue), and JetBrains** to run pre-commit scans on git diffs, inspect PR review verdicts, and query security policies directly from the editor.
 
 ### Available MCP Tools & Capabilities
 
-| Tool | Parameters | Description |
-| :--- | :--- | :--- |
-| `scan_local_diff` | `diff_content`, `repo_name` | Analyzes unstaged or staged git unified diffs for SQL injection (`CWE-89`), hardcoded secrets (`CWE-798`), command injection (`CWE-78`), unsafe deserialization (`CWE-502`), bare exceptions (`CWE-391`), and async event loop blocking (`CWE-400`). Returns exact line coordinates and ````suggestion blocks. |
-| `audit_pull_request` | `repo_full_name`, `pr_number` | Retrieves live PR-Sentinel audit results, verified findings, CVE status, and security metrics for any open PR. |
-| `get_repo_policy` | `repo_full_name` | Retrieves active blocking severities, banned packages, and allowed licenses. |
-| `explain_finding` | `cwe`, `title`, `description`, `code_snippet` | In-depth architectural explanation and attack surface breakdown for a vulnerability. |
-| `suggest_patch` | `cwe`, `code_snippet`, `language` | Returns production-ready replacement suggestion blocks based on CWE pattern. |
+| Tool                 | Parameters                                    | Description                                                                                                                                                                                                                                                                                                    |
+| :------------------- | :-------------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `scan_local_diff`    | `diff_content`, `repo_name`                   | Analyzes unstaged or staged git unified diffs for SQL injection (`CWE-89`), hardcoded secrets (`CWE-798`), command injection (`CWE-78`), unsafe deserialization (`CWE-502`), bare exceptions (`CWE-391`), and async event loop blocking (`CWE-400`). Returns exact line coordinates and ````suggestion blocks. |
+| `audit_pull_request` | `repo_full_name`, `pr_number`                 | Retrieves live PR-Sentinel audit results, verified findings, CVE status, and security metrics for any open PR.                                                                                                                                                                                                 |
+| `get_repo_policy`    | `repo_full_name`                              | Retrieves active blocking severities, banned packages, and allowed licenses.                                                                                                                                                                                                                                   |
+| `explain_finding`    | `cwe`, `title`, `description`, `code_snippet` | In-depth architectural explanation and attack surface breakdown for a vulnerability.                                                                                                                                                                                                                           |
+| `suggest_patch`      | `cwe`, `code_snippet`, `language`             | Returns production-ready replacement suggestion blocks based on CWE pattern.                                                                                                                                                                                                                                   |
 
 ### MCP Resources & Prompts
+
 - **Resources**:
-  - `pr-sentinel://policy/{repo_full_name}`: Active security policy rules in JSON.
-  - `pr-sentinel://reviews/{review_id}`: Review status, verdict, and findings by review UUID.
+  - `anikastha://policy/{repo_full_name}`: Active security policy rules in JSON.
+  - `anikastha://reviews/{review_id}`: Review status, verdict, and findings by review UUID.
 - **Prompts**:
   - `security-precommit-check`: Adversarial security review template for AI coding agents inspecting local diffs.
   - `explain-cwe-remediation`: Step-by-step remediation guide adhering to secure coding standards.
@@ -262,11 +270,13 @@ PR-Sentinel exposes a native **Model Context Protocol (MCP)** server supporting 
 ### IDE Setup
 
 #### 1. Cursor Setup
+
 Add to `.cursor/mcp.json` (or your Cursor Settings -> Features -> MCP):
+
 ```json
 {
   "mcpServers": {
-    "pr-sentinel": {
+    "anikastha": {
       "command": "python",
       "args": ["-m", "app.mcp", "--transport", "stdio"],
       "cwd": "${workspaceFolder}/backend",
@@ -279,16 +289,18 @@ Add to `.cursor/mcp.json` (or your Cursor Settings -> Features -> MCP):
 ```
 
 #### 2. Claude Desktop Setup
+
 Add to `%APPDATA%\Claude\claude_desktop_config.json` (Windows) or `~/Library/Application Support/Claude/claude_desktop_config.json` (macOS):
+
 ```json
 {
   "mcpServers": {
-    "pr-sentinel": {
+    "anikastha": {
       "command": "python",
       "args": ["-m", "app.mcp", "--transport", "stdio"],
-      "cwd": "/path/to/PrSentinel/backend",
+      "cwd": "/path/to/Anikastha/backend",
       "env": {
-        "PYTHONPATH": "/path/to/PrSentinel/backend"
+        "PYTHONPATH": "/path/to/PrSenAnikasthatinel/backend"
       }
     }
   }
@@ -296,32 +308,38 @@ Add to `%APPDATA%\Claude\claude_desktop_config.json` (Windows) or `~/Library/App
 ```
 
 #### 3. CLI Runner
+
 Run the MCP server directly from the terminal or in pre-commit hooks:
+
 ```bash
 cd backend
 python -m app.mcp --transport stdio
 ```
 
-*For Windsurf, VS Code (Cline/Continue), and JetBrains configuration guides, see [mcp_configs/README.md](mcp_configs/README.md).*
+_For Windsurf, VS Code (Cline/Continue), and JetBrains configuration guides, see [mcp_configs/README.md](mcp_configs/README.md)._
 
 ---
 
 ## Running Tests & Linters
 
 ### Backend Test Suite (Pytest + Coverage)
+
 ```bash
 cd backend
 pytest -v --cov=app --cov-report=term-missing
 ```
-*Current test suite: **74 passed tests** covering AST parsing, git diff coordinate validation, OSV.dev batch queries, LangGraph review pipelines, GitHub comment publishing, webhooks, Model Context Protocol (MCP) server tools, and REST/SSE endpoints.*
+
+_Current test suite: **74 passed tests** covering AST parsing, git diff coordinate validation, OSV.dev batch queries, LangGraph review pipelines, GitHub comment publishing, webhooks, Model Context Protocol (MCP) server tools, and REST/SSE endpoints._
 
 ### Code Quality (Ruff)
+
 ```bash
 cd backend
 ruff check .
 ```
 
 ### Frontend Typecheck & Build
+
 ```bash
 cd frontend
 npx tsc --noEmit
