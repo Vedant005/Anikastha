@@ -27,7 +27,7 @@ logger = logging.getLogger("pr_sentinel.main")
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Application lifespan manager: initialize connections on startup and cleanup on shutdown."""
-    logger.info("Initializing PR-Sentinel backend (env=%s)...", settings.ENVIRONMENT)
+    logger.info("Initializing Anikastha backend (env=%s)...", settings.ENVIRONMENT)
 
     # Automatically ensure database schemas/tables exist on startup
     try:
@@ -53,7 +53,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     yield
 
     # Clean shutdown
-    logger.info("Shutting down PR-Sentinel backend...")
+    logger.info("Shutting down Anikastha backend...")
     await close_redis_client()
     await close_arq_pool()
     await engine.dispose()
@@ -61,7 +61,7 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
 
 app = FastAPI(
-    title="PR-Sentinel API",
+    title="Anikastha API",
     description="Autonomous AI-Powered GitHub Pull Request Security Reviewer",
     version="0.1.0",
     lifespan=lifespan,
